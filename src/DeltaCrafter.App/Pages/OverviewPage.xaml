@@ -5,11 +5,16 @@
     xmlns:controls="using:DeltaCrafter.App.Controls"
     xmlns:vm="using:DeltaCrafter.App.ViewModels">
 
-    <ScrollViewer>
-        <Grid Padding="{StaticResource TokenPagePadding}"
-              MaxWidth="{StaticResource TokenContentMaxWidth}"
-              HorizontalAlignment="Stretch">
-            <StackPanel Spacing="{StaticResource TokenGapL}">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <!-- 星号三列确定性居中(同 PlanPage 注释):不依赖 Stretch+MaxWidth 的对齐退化。 -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="999*" MaxWidth="{StaticResource TokenContentMaxWidth}" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="1" Padding="{StaticResource TokenPagePadding}"
+                        Spacing="{StaticResource TokenGapL}">
 
                 <controls:PageHeader Title="总览" Subtitle="监控四个特勤处设施,并手动或按计划执行收取与续造。" />
 

@@ -9,7 +9,7 @@ DeltaCrafter 是一款面向 Windows 的本地桌面工具，用于按照计划�
 
 ## 当前状态
 
-当前版本为 `0.1.0`，核心链路已在 2560×1440、16:9 无边框窗口下完成实机验证。
+当前版本为 `0.2.0`，核心链路已在 2560×1440、16:9 无边框窗口下完成实机验证。
 
 - 启动器到游戏大厅、特勤处导航
 - 四设施多遍共识识别
@@ -18,6 +18,7 @@ DeltaCrafter 是一款面向 Windows 的本地桌面工具，用于按照计划�
 - 游戏内倒计时驱动的自动调度
 - 制造取消、失败退避、托盘与防睡眠
 - 深色、浅色与跟随系统主题
+- 启动自动检查更新，确认后自动下载校验并覆盖安装
 
 预启动、近时间任务衔接和长时间自动循环已实现；发布前后的验证状态以 [CHANGELOG.md](CHANGELOG.md) 为准。
 
@@ -52,7 +53,7 @@ DeltaCrafter 是一款面向 Windows 的本地桌面工具，用于按照计划�
 2. 校验压缩包 SHA-256，确认下载未损坏或被替换：
 
    ```powershell
-   Get-FileHash .\DeltaCrafter-win-x64-0.1.0.zip -Algorithm SHA256
+   Get-FileHash .\DeltaCrafter-win-x64-0.2.0.zip -Algorithm SHA256
    ```
 
 3. 解压到普通可写目录，不要直接在压缩包内运行。
@@ -69,6 +70,12 @@ DeltaCrafter 是一款面向 Windows 的本地桌面工具，用于按照计划�
 5. 首次自动执行前建议开启开发者模式，按“启动到大厅 → 进入特勤处 → 识别画面”逐段检查。
 
 默认锚点按 2560×1440 标定并使用归一化坐标。游戏界面更新或点击位置偏移时，请参照 [构建与校准指南](docs/构建与校准指南.md) 调整。
+
+## 更新
+
+程序每次启动会自动检查一次更新，也可在「设置 → 关于」右侧点「检查更新」。发现新版本时会弹窗，确认后从 GitHub Releases 下载官方安装包、校验 SHA-256，通过后静默覆盖安装并自动重启。校验不通过会删除下载文件并报错，不会安装未通过校验的包。
+
+制造计划、正在计时的制造进度与所有设置都保存在 `%LocalAppData%\DeltaCrafter`，覆盖安装只更新程序文件，不会清除这些数据；下载与安装期间会暂停自动调度，不会打断正在进行的制造。若窗口正驻留托盘，发现新版会改为系统通知提醒，打开窗口后再更新。
 
 ## 安全设计
 
@@ -101,9 +108,9 @@ dotnet test tests\DeltaCrafter.Core.Tests\DeltaCrafter.Core.Tests.csproj -c Rele
 生成与 GitHub Releases 相同结构的发布包：
 
 ```powershell
-.\scripts\build-release.ps1 -Version 0.1.0
+.\scripts\build-release.ps1 -Version 0.2.0
 .\scripts\install-inno-setup.ps1
-.\scripts\build-installer.ps1 -Version 0.1.0 -SkipBuild
+.\scripts\build-installer.ps1 -Version 0.2.0 -SkipBuild
 ```
 
 安装包构建固定使用官方签名的 Inno Setup 6.7.3，并校验编译器、简体中文语言文件及复用

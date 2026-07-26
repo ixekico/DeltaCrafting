@@ -9,12 +9,12 @@ public sealed record LaunchOutcome(nint Hwnd, bool LaunchedByUs);
 /// <summary>
 /// 「确保游戏就绪并到达大厅」流程。游戏必须经启动器启动,完整链:
 /// 启动器(OCR 找「开始游戏」点击)→ 游戏客户端(16:9 大窗,与启动器同名以比例区分)→
-/// 模式选择(点烽火地带)→ 3D 基地(Tab)→ 大厅。未知画面时有界 ESC(≤3 次)关弹窗。
+/// 模式选择(点烽火地带)→ 3D 基地(Tab)→ 大厅。活动公告页即时 ESC 跳过(≤8 页);未知画面有界 ESC(≤3 次)关弹窗。
 /// </summary>
 public sealed class LaunchFlow
 {
     private static readonly string[] KnownScreens =
-        [AnchorKeys.Lobby, AnchorKeys.SpecOpsHome, AnchorKeys.ModeSelect, AnchorKeys.Safehouse];
+        [AnchorKeys.Lobby, AnchorKeys.SpecOpsHome, AnchorKeys.ModeSelect, AnchorKeys.Safehouse, AnchorKeys.PromoAnnounce];
     private static readonly NRect FullFrame = new() { X = 0, Y = 0, W = 1, H = 1 };
 
     private readonly GameProcessBrick _process;
@@ -140,7 +140,7 @@ public sealed class LaunchFlow
     private async Task NavigateToLobbyAsync(nint hwnd, AppSettings s, CancellationToken ct)
     {
         long deadline = Environment.TickCount64 + s.LobbyTimeoutSeconds * 1000L;
-        int escUsed = 0, unknownStreak = 0;
+        int escUsed = 0, unknownStreak = 0, promoEscs = 0;
         while (Environment.TickCount64 < deadline)
         {
             ct.ThrowIfCancellationRequested();
@@ -166,6 +166,19 @@ public sealed class LaunchFlow
                     _input.PressTab();
                     unknownStreak = 0;
                     await Task.Delay(2500, ct);
+                    break;
+                case AnchorKeys.PromoAnnounce:
+                    // 公告可多页:识别到就 ESC(专用预算,与兜底 3 次分离);8 页关不掉即 ESC 失效/样式已变,留现场明确失败,不耗完大厅超时。
+                    if (++promoEscs > 8)
+                    {
+                        var (promoPng, promoDump) = await _probe.DumpAsync(hwnd, "fail-活动公告");
+                        throw new StepFailedException("跳过活动公告",
+                            $"按 ESC 8 次后活动公告仍未关闭。诊断截图:{promoPng}", promoPng, promoDump);
+                    }
+                    _log.Information("活动公告页,按 ESC 跳过({N}/8)。", promoEscs);
+                    _input.PressEscape();
+                    unknownStreak = 0;
+                    await Task.Delay(1500, ct);
                     break;
                 default:
                     unknownStreak++;

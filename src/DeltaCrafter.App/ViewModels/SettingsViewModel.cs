@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using DeltaCrafter.App.Services;
 using DeltaCrafter.Core.L0;
 using DeltaCrafter.Core.L1;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace DeltaCrafter.App.ViewModels;
 
@@ -24,7 +26,22 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string gamePath;
     [ObservableProperty] private string windowRuleText;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CheckingRingVisibility))]
+    private bool isCheckingUpdate;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasUpdateStatus))]
+    private string updateStatus = "";
+
+    [ObservableProperty] private InfoBarSeverity updateSeverity = InfoBarSeverity.Informational;
+
     public bool HasAutostartError => !string.IsNullOrEmpty(AutostartError);
+    public bool HasUpdateStatus => !string.IsNullOrEmpty(UpdateStatus);
+
+    /// <summary>检查中才显示按钮内的进度环(项目惯例:VM 直出 Visibility,不引入布尔转换器)。</summary>
+    public Visibility CheckingRingVisibility =>
+        IsCheckingUpdate ? Visibility.Visible : Visibility.Collapsed;
 
     public SettingsViewModel(AppHost host, ThemeService theme)
     {
@@ -139,6 +156,33 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public string VersionText =>
         "v" + (typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
+
+    /// <summary>手动检查更新。检查/下载失败把原因显示在 UpdateStatus,不静默吞掉;
+    /// 发现新版由 UpdateService 弹窗接管后续下载与安装。CanExecute 防并发点击。</summary>
+    [RelayCommand(CanExecute = nameof(CanCheckUpdate))]
+    private async Task CheckUpdateAsync()
+    {
+        IsCheckingUpdate = true;
+        CheckUpdateCommand.NotifyCanExecuteChanged();
+        UpdateSeverity = InfoBarSeverity.Informational;
+        UpdateStatus = "正在检查更新…";
+        try
+        {
+            UpdateStatus = await _host.Updater.CheckFromSettingsAsync();
+        }
+        catch (Exception ex)
+        {
+            UpdateSeverity = InfoBarSeverity.Error; // 明确失败:红色错误条,不用蓝色信息条弱化
+            UpdateStatus = $"检查失败:{ex.Message}";
+        }
+        finally
+        {
+            IsCheckingUpdate = false;
+            CheckUpdateCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    private bool CanCheckUpdate() => !IsCheckingUpdate;
 
     [RelayCommand]
     private void BrowseGamePath()

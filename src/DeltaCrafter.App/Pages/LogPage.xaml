@@ -5,8 +5,14 @@
     xmlns:controls="using:DeltaCrafter.App.Controls"
     xmlns:vm="using:DeltaCrafter.App.ViewModels">
 
-    <Grid Padding="{StaticResource TokenPagePadding}"
-          MaxWidth="{StaticResource TokenContentMaxWidth}"
+    <!-- 星号三列确定性居中(同 PlanPage 注释):不依赖 Stretch+MaxWidth 的对齐退化。 -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="999*" MaxWidth="{StaticResource TokenContentMaxWidth}" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+    <Grid Grid.Column="1" Padding="{StaticResource TokenPagePadding}"
           RowSpacing="{StaticResource TokenGapL}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -67,5 +73,6 @@
                 </ListView.ItemTemplate>
             </ListView>
         </Border>
+    </Grid>
     </Grid>
 </Page>

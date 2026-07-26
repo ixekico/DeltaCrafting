@@ -2,13 +2,19 @@
     x:Class="DeltaCrafter.App.Pages.PlanPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:DeltaCrafter.App.Controls"
-    xmlns:vm="using:DeltaCrafter.App.ViewModels">
+    xmlns:controls="using:DeltaCrafter.App.Controls">
 
-    <ScrollViewer>
-        <Grid Padding="{StaticResource TokenPagePadding}"
-              MaxWidth="{StaticResource TokenContentMaxWidth}">
-            <StackPanel Spacing="{StaticResource TokenGapL}">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <!-- 内容列居中用星号三列确定性实现:两侧等分剩余宽度,中列吃满并封顶。
+             不依赖 Stretch+MaxWidth 的对齐退化(实测 125% 缩放全屏下会偏右)。 -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="999*" MaxWidth="{StaticResource TokenContentMaxWidth}" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="1" Padding="{StaticResource TokenPagePadding}"
+                        Spacing="{StaticResource TokenGapL}">
 
                 <controls:PageHeader Title="制造计划"
                                      Subtitle="为每个设施设定要制造的物品(名称需与游戏内列表完全一致)。所有修改即时自动保存。" />
@@ -48,43 +54,51 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 各设施配置 -->
-                <ItemsControl ItemsSource="{x:Bind Vm.Facilities}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Spacing="12" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:PlanFacilityModel">
+                <!-- 各设施配置:2×2 网格,顺序与游戏特勤处一致(左上技术中心、右上工作台、
+                     左下制药台、右下防具台,由 PlanViewModel.DisplayOrder 保证)。 -->
+                <!-- 本模板内必须用经典 Binding、不得用 x:Bind:ItemsRepeater 对含 x:Bind 的
+                     模板走编译绑定通道,不给控件设置 DataContext,而搜索框事件与回显
+                     (PlanPage.xaml.cs)全部经 DataContext 取模型——混用会静默失灵(实测:
+                     聚焦不展开、键入不过滤、已存物品名不回填)。 -->
+                <ItemsRepeater ItemsSource="{x:Bind Vm.Facilities}">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout Orientation="Horizontal"
+                                           MaximumRowsOrColumns="2" ItemsStretch="Fill"
+                                           MinItemWidth="380"
+                                           MinColumnSpacing="16" MinRowSpacing="16" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate>
                             <Border Style="{StaticResource CardBorderStyle}">
                                 <StackPanel Spacing="12">
                                     <Grid>
-                                        <TextBlock Text="{x:Bind Name}"
+                                        <TextBlock Text="{Binding Name}"
                                                    Style="{StaticResource CardTitleTextStyle}"
                                                    VerticalAlignment="Center" />
                                         <ToggleSwitch HorizontalAlignment="Right"
                                                       OnContent="启用" OffContent="停用"
-                                                      IsOn="{x:Bind Enabled, Mode=TwoWay}" />
+                                                      IsOn="{Binding Enabled, Mode=TwoWay}" />
                                     </Grid>
                                     <!-- 搜索式选择:键入即过滤(大小写无关、×/x 等价),聚焦展开全部候选。
-                                         写入与回显走事件显式处理(即改即存),见 PlanPage.xaml.cs。 -->
+                                         写入与回显走事件显式处理(即改即存),见 PlanPage.xaml.cs。
+                                         回显挂 DataContextChanged 而非 Loaded:ItemsRepeater 复用控件时
+                                         必须立即回填,否则残留文本会在失焦时写进别的设施。 -->
                                     <AutoSuggestBox Header="制造物品"
                                                     PlaceholderText="输入关键字搜索,如 AP / 9×19;回车确认"
                                                     QueryIcon="Find"
                                                     HorizontalAlignment="Stretch"
-                                                    Loaded="OnItemBoxLoaded"
+                                                    DataContextChanged="OnItemBoxDataContextChanged"
                                                     GotFocus="OnItemBoxGotFocus"
                                                     LostFocus="OnItemBoxLostFocus"
                                                     TextChanged="OnItemTextChanged"
                                                     QuerySubmitted="OnItemQuerySubmitted" />
                                     <TextBox Header="备注(可选)"
-                                             Text="{x:Bind Note, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                             Text="{Binding Note, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
 
             </StackPanel>
         </Grid>

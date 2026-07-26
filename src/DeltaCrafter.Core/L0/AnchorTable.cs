@@ -71,10 +71,12 @@ public sealed class AnchorTable
 /// anchors.json 中的界面/点位/区域名称常量。改名必须同步数据文件与本类。
 /// 界面流:mode-select →(点烽火地带)→ safehouse →(Tab)→ lobby →(点顶栏特勤处)→
 /// specops-home(四设施槽位一屏可见)→(点槽位)→ production / collect-result。
+/// 活动期内点烽火地带后可能插入 promo-announce(全屏活动公告,可多页),ESC 跳过。
 /// </summary>
 public static class AnchorKeys
 {
     public const string ModeSelect = "mode-select";
+    public const string PromoAnnounce = "promo-announce";
     public const string Safehouse = "safehouse";
     public const string Lobby = "lobby";
     public const string SpecOpsHome = "specops-home";

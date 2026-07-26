@@ -4,10 +4,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:DeltaCrafter.App.Controls">
 
-    <ScrollViewer>
-        <Grid Padding="{StaticResource TokenPagePadding}"
-              MaxWidth="{StaticResource TokenContentMaxWidth}">
-            <StackPanel Spacing="{StaticResource TokenGapM}">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <!-- 星号三列确定性居中(同 PlanPage 注释):不依赖 Stretch+MaxWidth 的对齐退化。 -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="999*" MaxWidth="{StaticResource TokenContentMaxWidth}" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="1" Padding="{StaticResource TokenPagePadding}"
+                        Spacing="{StaticResource TokenGapM}">
 
                 <controls:PageHeader Title="设置" />
 
@@ -115,13 +121,34 @@
                 <!-- 关于 -->
                 <Border Style="{StaticResource CardBorderStyle}" Margin="0,12,0,0">
                     <StackPanel Spacing="6">
-                        <TextBlock Text="关于" Style="{StaticResource CardTitleTextStyle}" />
-                        <TextBlock Style="{StaticResource SecondaryTextStyle}">
-                            <Run Text="三角洲特勤助手" />
-                            <Run Text="{x:Bind Vm.VersionText}" />
-                        </TextBlock>
-                        <TextBlock Text="通过画面识别与模拟操作自动收取并续造特勤处物资。请在游戏设置中使用 16:9 无边框窗口,并以管理员身份运行本程序。"
-                                   Style="{StaticResource SecondaryTextStyle}" />
+                        <!-- 标题/版本在左,检查更新按钮在最右;更新过程与结论走下方 InfoBar。 -->
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Spacing="6">
+                                <TextBlock Text="关于" Style="{StaticResource CardTitleTextStyle}" />
+                                <TextBlock Style="{StaticResource SecondaryTextStyle}">
+                                    <Run Text="三角洲特勤助手" />
+                                    <Run Text="{x:Bind Vm.VersionText}" />
+                                </TextBlock>
+                                <TextBlock Text="通过画面识别与模拟操作自动收取并续造特勤处物资。请在游戏设置中使用 16:9 无边框窗口,并以管理员身份运行本程序。"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" VerticalAlignment="Top"
+                                    Command="{x:Bind Vm.CheckUpdateCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ProgressRing Width="16" Height="16"
+                                                  IsActive="{x:Bind Vm.IsCheckingUpdate, Mode=OneWay}"
+                                                  Visibility="{x:Bind Vm.CheckingRingVisibility, Mode=OneWay}" />
+                                    <TextBlock Text="检查更新" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <InfoBar IsOpen="{x:Bind Vm.HasUpdateStatus, Mode=OneWay}"
+                                 Severity="{x:Bind Vm.UpdateSeverity, Mode=OneWay}" IsClosable="False"
+                                 Message="{x:Bind Vm.UpdateStatus, Mode=OneWay}" />
                         <HyperlinkButton Content="打开数据与配置文件夹"
                                          Command="{x:Bind Vm.OpenDataFolderCommand}"
                                          Padding="0,4,0,0" />

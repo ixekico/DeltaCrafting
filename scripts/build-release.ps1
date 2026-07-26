@@ -2,11 +2,18 @@
 param(
     [Parameter()]
     [ValidatePattern('^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$')]
-    [string]$Version = '0.1.0'
+    [string]$Version
 )
 
 $ErrorActionPreference = 'Stop'
 $root = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    [xml]$props = Get-Content -LiteralPath (Join-Path $root 'Directory.Build.props') -Raw -Encoding UTF8
+    $Version = [string]$props.Project.PropertyGroup.Version
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        throw 'Directory.Build.props does not define a project Version.'
+    }
+}
 $artifacts = Join-Path $root 'artifacts'
 $publishDir = Join-Path $artifacts 'DeltaCrafter-win-x64'
 $zipName = "DeltaCrafter-win-x64-$Version.zip"

@@ -57,6 +57,11 @@ public class JsonStoreBrickTests : IDisposable
 
         Assert.NotNull(table.Screen(AnchorKeys.ModeSelect).Point(AnchorKeys.PointModeEntry));
         Assert.NotNull(table.Screen(AnchorKeys.Safehouse));
+
+        // 活动公告页:判定词是公告框架固有的底部「继续」提示;ROI 空宽高会让 OCR 恒读空,判定失效。
+        var promo = table.Screen(AnchorKeys.PromoAnnounce).Probe;
+        Assert.False(string.IsNullOrWhiteSpace(promo.MustContain));
+        Assert.True(promo.Roi.W > 0 && promo.Roi.H > 0);
         Assert.NotNull(table.Screen(AnchorKeys.Lobby).Point(AnchorKeys.PointSpecOpsEntry));
         Assert.NotNull(table.Screen(AnchorKeys.CollectResult).Point(AnchorKeys.PointDismiss));
         Assert.NotNull(table.Screen(AnchorKeys.ReplenishPopup).Point(AnchorKeys.PointBuy));

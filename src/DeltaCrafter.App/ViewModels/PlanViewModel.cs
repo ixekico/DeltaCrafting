@@ -69,6 +69,11 @@ public sealed class PlanFacilityModel : ObservableObject
 /// <summary>制造计划页:全局循环/补齐开关 + 四个设施的物品配置。</summary>
 public sealed partial class PlanViewModel : ObservableObject
 {
+    /// <summary>卡片显示顺序 = 游戏特勤处 2×2 排布(左上技术中心、右上工作台、
+    /// 左下制药台、右下防具台)。仅影响本页 UI;运行处理顺序仍是 FacilityKeys.All。</summary>
+    private static readonly FacilityKey[] DisplayOrder =
+        [FacilityKey.TechCenter, FacilityKey.Workbench, FacilityKey.PharmacyLab, FacilityKey.ArmorStation];
+
     private readonly AppHost _host;
 
     public ObservableCollection<PlanFacilityModel> Facilities { get; } = [];
@@ -83,9 +88,9 @@ public sealed partial class PlanViewModel : ObservableObject
     public void RebuildFromCatalog()
     {
         Facilities.Clear();
-        foreach (var fp in _host.Plan.Facilities)
+        foreach (var key in DisplayOrder)
         {
-            var key = fp.Key;
+            var fp = _host.Plan.For(key);
             var suggestions = _host.Catalog.For(key).Select(i => i.Name).ToList();
             Facilities.Add(new PlanFacilityModel(fp, suggestions,
                 display => ResolveMatchName(key, display), _host.SavePlan));

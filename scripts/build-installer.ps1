@@ -3,7 +3,7 @@
 param(
     [Parameter()]
     [ValidatePattern('^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$')]
-    [string]$Version = '0.1.0',
+    [string]$Version,
 
     [Parameter()]
     [switch]$SkipBuild,
@@ -16,6 +16,13 @@ $ErrorActionPreference = 'Stop'
 $requiredIsccHash = '0A8757031B33777E4C9CBFFEE40F11A5062B36D25CBE144C1DB73B6102B80AD7'
 $requiredLanguageHash = '7D544B9BB1D142CFA11F2E5D3CC8ABE2E55F8E066C5124E3772675AA236E1278'
 $root = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    [xml]$props = Get-Content -LiteralPath (Join-Path $root 'Directory.Build.props') -Raw -Encoding UTF8
+    $Version = [string]$props.Project.PropertyGroup.Version
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        throw 'Directory.Build.props does not define a project Version.'
+    }
+}
 $publishDir = Join-Path $root 'artifacts\DeltaCrafter-win-x64'
 $issPath = Join-Path $root 'installer\DeltaCrafter.iss'
 $languagePath = Join-Path $root 'installer\Languages\ChineseSimplified.isl'

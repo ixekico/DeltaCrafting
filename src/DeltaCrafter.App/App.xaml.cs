@@ -40,6 +40,9 @@ public partial class App : Application
             AppHost.Current.Log.Information("以 --minimized 启动,驻留托盘,不显示窗口。");
         else
             MainWindowRef.Activate();
+
+        // 每次启动自动检查更新:失败只记日志,发现新版按窗口可见性弹窗或发通知。
+        _ = AppHost.Current.Updater.CheckOnStartupAsync();
     }
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

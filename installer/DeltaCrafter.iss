@@ -68,6 +68,9 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Run]
 ; The app manifest requires elevation; launching here reuses Setup's token.
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchAfterInstall}"; Flags: nowait postinstall skipifsilent
+; In-app updater installs with /SILENT /AutoLaunch=1 and expects an automatic restart.
+; Gated on the explicit flag so ordinary silent installs (e.g. CI smoke tests) are unchanged.
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: ShouldAutoLaunch
 
 [CustomMessages]
 LaunchAfterInstall=立即运行 {#MyAppName}
@@ -80,6 +83,14 @@ RemoveDataFailed={#MyAppName} 已卸载,但未能完整删除本机数据:%n%n%1
 var
   LastToolExitCode: Integer;
   DeleteUserDataRequested: Boolean;
+
+function ShouldAutoLaunch(): Boolean;
+begin
+  { The in-app updater passes /AutoLaunch=1; only then restart the app after a
+    silent upgrade. PrepareToInstall already force-stops the old instance, so the
+    new one registers cleanly as the single instance. }
+  Result := ExpandConstant('{param:AutoLaunch|0}') = '1';
+end;
 
 function StopAppProcess(): Boolean;
 var

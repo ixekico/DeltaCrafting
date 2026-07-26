@@ -16,10 +16,12 @@ public sealed partial class PlanPage : Page
 
     public PlanPage() => InitializeComponent();
 
-    /// <summary>控件加载完成后用模型值回填显示。</summary>
-    private void OnItemBoxLoaded(object sender, RoutedEventArgs e)
+    /// <summary>DataContext 就绪或变化时用模型值回填显示。挂 DataContextChanged 而非 Loaded:
+    /// ItemsRepeater 会复用模板控件,复用瞬间若不回填,上一个设施的残留文本
+    /// 会在失焦落盘时写进当前设施——必须在换绑当下同步。</summary>
+    private void OnItemBoxDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
     {
-        if (sender is AutoSuggestBox box && box.DataContext is PlanFacilityModel model)
+        if (sender is AutoSuggestBox box && args.NewValue is PlanFacilityModel model)
             box.Text = model.ItemName;
     }
 

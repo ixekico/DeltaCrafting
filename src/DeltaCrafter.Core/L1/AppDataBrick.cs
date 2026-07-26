@@ -17,6 +17,8 @@ public sealed class AppDataBrick
     public string ItemsPath => Path.Combine(Root, "items.json");
     public string LogsDir => Path.Combine(Root, "logs");
     public string ShotsDir => Path.Combine(Root, "shots");
+    /// <summary>更新安装包下载目录。每次下载前清空,避免误用旧包或半截文件。</summary>
+    public string UpdatesDir => Path.Combine(Root, "updates");
 
     /// <param name="defaultsDir">构建输出中的默认数据目录(exe 旁的 Data\)。</param>
     public void EnsureInitialized(string defaultsDir)

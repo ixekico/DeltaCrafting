@@ -30,6 +30,7 @@ public sealed class AppHost : ICatalogSink, ICatalogLookup, IAppWindowGuard
     public SleepGuardBrick SleepGuard { get; }
     public ToastNotifier Notifier { get; }
     public AutomationCoordinator Coordinator { get; }
+    public UpdateService Updater { get; }
 
     public ShellViewModel ShellVm { get; }
     public OverviewViewModel OverviewVm { get; }
@@ -96,6 +97,8 @@ public sealed class AppHost : ICatalogSink, ICatalogLookup, IAppWindowGuard
         Coordinator = new AutomationCoordinator(launch, nav, collect, craft, abort, scan, this,
             this, this, shutdown, engine, probe, WindowBrick, SleepGuard, () => Settings, () => Plan,
             Notifier, clock, Log);
+
+        Updater = new UpdateService(this, new UpdateCoordinator(), Log);
 
         ShellVm = new ShellViewModel(Coordinator);
         OverviewVm = new OverviewViewModel(Coordinator, UiSink, this);

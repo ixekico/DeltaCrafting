@@ -20,4 +20,8 @@
     <Content Include="Data\anchors.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Data\items.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DeltaCrafter.Core.Tests" />
+  </ItemGroup>
 </Project>

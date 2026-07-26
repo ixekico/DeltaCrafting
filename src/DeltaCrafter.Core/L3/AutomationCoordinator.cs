@@ -76,6 +76,29 @@ public sealed partial class AutomationCoordinator : IDisposable
     private const int PrewarmLeadSeconds = 120;
     private DateTimeOffset? _prewarmedFor;
 
+    /// <summary>执行闸门:更新下载/安装期间置位,拒绝一切新触发(自动调度、预启动、
+    /// 手动),避免安装程序在半截制造流程中结束游戏进程。可逆:更新失败即解除。
+    /// 已在执行的一轮不受影响——调用方应等其自然结束。</summary>
+    private volatile bool _runsBlocked;
+    public async Task BlockNewRunsAndWaitAsync(CancellationToken ct)
+    {
+        _runsBlocked = true;
+        try
+        {
+            // 取得并立即释放执行锁，证明在途任务已经结束。ExecuteGuardedAsync
+            // 拿锁后会再次检查闸门，因此抢在本方法之前排队的触发也无法穿透。
+            await _runLock.WaitAsync(ct);
+            _runLock.Release();
+        }
+        catch
+        {
+            _runsBlocked = false;
+            throw;
+        }
+    }
+
+    public void UnblockRuns() => _runsBlocked = false;
+
     /// <summary>常驻调度循环。仅此处依据设置开合防睡眠;执行中强制防睡眠。</summary>
     public async Task RunSchedulerLoopAsync(CancellationToken appStop)
     {
@@ -91,7 +114,7 @@ public sealed partial class AutomationCoordinator : IDisposable
                     Publish(s.AutoLoopEnabled
                         ? new CoordinatorStatus(EngineMode.WaitingSchedule, "等待下次执行", next)
                         : new CoordinatorStatus(EngineMode.Idle, "自动循环未开启", null));
-                if (s.AutoLoopEnabled && next is { } n && !IsRunning)
+                if (s.AutoLoopEnabled && next is { } n && !IsRunning && !_runsBlocked)
                 {
                     if (_clock.Now >= n)
                         _ = RunOnceAsync("定时触发", CancellationToken.None);
@@ -272,10 +295,23 @@ public sealed partial class AutomationCoordinator : IDisposable
         bool requiresCalibration, Func<RunReport, CancellationToken, Task> body)
     {
         var report = new RunReport(trigger);
+        if (_runsBlocked)
+        {
+            _log.Warning("触发[{Trigger}]被忽略:更新安装进行中。", trigger);
+            report.Add("更新安装进行中,本次触发被忽略");
+            return report;
+        }
         if (!await _runLock.WaitAsync(0, CancellationToken.None))
         {
             _log.Warning("触发[{Trigger}]被忽略:已有任务在执行。", trigger);
             report.Add("已有任务在执行,本次触发被忽略");
+            return report;
+        }
+        if (_runsBlocked)
+        {
+            _runLock.Release();
+            _log.Warning("触发[{Trigger}]被忽略:更新安装进行中。", trigger);
+            report.Add("更新安装进行中,本次触发被忽略");
             return report;
         }
         _runCts = new CancellationTokenSource();
