@@ -42,10 +42,8 @@ dotnet test tests\DeltaCrafter.Core.Tests\DeltaCrafter.Core.Tests.csproj -c Rele
 
 ## 文档
 
-- 新需求追加到 `任务进展/需求历史/`。
-- 完成记录追加到当前 `任务进展-XXX.md`，每页不超过 100 行。
-- 功能条目使用对应代码文件名作为稳定键。
-- 历史页不重写；事实变化用新条目更正。
+- 面向用户的行为变化同步更新 `README.md`。
+- 尚未发布和已经发布的变化按版本记录在 `CHANGELOG.md`。
 
 ## Pull Request
 
