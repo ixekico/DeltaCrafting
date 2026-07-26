@@ -4,7 +4,7 @@
 
 ## 开始之前
 
-1. 阅读 [README.md](README.md)、[CLAUDE.md](CLAUDE.md) 和 [构建与校准指南](docs/构建与校准指南.md)。
+1. 阅读 [README.md](README.md) 和 [构建与校准指南](docs/构建与校准指南.md)。
 2. 使用 Windows、.NET 8 SDK 与 Release/x64 配置构建。
 3. 不要提交 `%LocalAppData%\DeltaCrafter` 下的设置、日志、状态或截图。
 

@@ -118,7 +118,7 @@ L3 编排层 → L2 流程层 → L1 能力组件 → L0 领域模型
 UI 只消费 L3 与 L0
 ```
 
-详细约束见 [CLAUDE.md](CLAUDE.md)，参与开发前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
+参与开发前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 已知限制
 
