@@ -39,9 +39,19 @@ if (($signature.Status -ne 'Valid') -or
 }
 
 New-Item -ItemType Directory -Force -Path $destinationFullPath | Out-Null
-& $installerPath /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /PORTABLE=1 "/DIR=$destinationFullPath"
-if ($LASTEXITCODE -ne 0) {
-    throw "Inno Setup bootstrap installer failed with exit code $LASTEXITCODE"
+$bootstrapArguments = @(
+    '/VERYSILENT',
+    '/SUPPRESSMSGBOXES',
+    '/NORESTART',
+    '/PORTABLE=1',
+    "/DIR=`"$destinationFullPath`""
+)
+# PowerShell 7 does not reliably wait for GUI executables invoked with "&".
+# Waiting explicitly makes the compiler installation result identical locally and in CI.
+$bootstrapProcess = Start-Process -FilePath $installerPath `
+    -ArgumentList $bootstrapArguments -Wait -PassThru -WindowStyle Hidden
+if ($bootstrapProcess.ExitCode -ne 0) {
+    throw "Inno Setup bootstrap installer failed with exit code $($bootstrapProcess.ExitCode)"
 }
 if (-not (Test-Path -LiteralPath $isccPath -PathType Leaf)) {
     throw "ISCC.exe was not installed to $destinationFullPath"
