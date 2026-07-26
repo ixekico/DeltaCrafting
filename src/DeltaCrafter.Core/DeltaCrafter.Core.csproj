@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 自动化核心(L0-L3)。约束:不得引用 WindowsAppSDK/UI 框架;WinRT 能力仅限
+       Windows SDK 投影(OCR、图像编码),保证核心可独立于 UI 演进与测试。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <RootNamespace>DeltaCrafter.Core</RootNamespace>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <!-- schtasks 输出走 OEM 中文代码页(936);该 Provider 不在共享框架内,需显式引入,
+         否则 Encoding.GetEncoding(936) 运行时抛异常、CodePagesEncodingProvider 编译不过。 -->
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 默认数据随构建输出到 Data\,首次运行复制到 %LocalAppData%\DeltaCrafter 后即以后者为准。 -->
+    <Content Include="Data\anchors.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Data\items.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

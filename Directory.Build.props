@@ -1,0 +1,17 @@
+<Project>
+  <!-- 全仓库共享的编译属性。各 csproj 不得重复定义这里的键,避免漂移。 -->
+  <PropertyGroup>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>x64</Platforms>
+    <!-- 允许在非 Windows 环境还原/静态检查 windows TFM(云端代码审查用);Windows 上无影响。 -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <Version>0.1.0</Version>
+    <Product>DeltaCrafter 三角洲特勤助手</Product>
+    <Description>《三角洲行动》特勤处本地自动制造与调度助手。</Description>
+    <Copyright>Copyright © 2026 DeltaCrafter contributors</Copyright>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,19 @@
+<Application
+    x:Class="DeltaCrafter.App.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:conv="using:DeltaCrafter.App.Converters">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <!-- 设计令牌与卡片样式在系统资源之后合并,其中的圆角覆写才能生效。 -->
+                <ResourceDictionary Source="ms-appx:///Design/Tokens.xaml" />
+                <ResourceDictionary Source="ms-appx:///Design/Cards.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <conv:InvertBoolConverter x:Key="InvertBool" />
+            <conv:LogLevelToBrushConverter x:Key="LogLevelBrush" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

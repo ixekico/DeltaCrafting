@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 纯逻辑单测:倒计时解析、锚点换算、调度计算、JSON 读写。不触碰 Win32/WinRT 运行时。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeltaCrafter.Core\DeltaCrafter.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 契约测试要在测试输出里读到默认 anchors.json;项目引用的 Content 不会自动流入,
+         显式以 Link 复制一份,保证 AppContext.BaseDirectory\Data 下存在。 -->
+    <Content Include="..\..\src\DeltaCrafter.Core\Data\anchors.json"
+             Link="Data\anchors.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

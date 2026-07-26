@@ -1,0 +1,67 @@
+<UserControl
+    x:Class="DeltaCrafter.App.Controls.FacilityCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DeltaCrafter.App.Controls">
+
+    <Border Style="{StaticResource CardBorderStyle}"
+            Width="{StaticResource TokenFacilityCardWidth}"
+            MinHeight="{StaticResource TokenFacilityCardHeight}">
+        <Grid RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <TextBlock Text="{x:Bind Model.Name, Mode=OneWay}"
+                           Style="{StaticResource CardTitleTextStyle}"
+                           HorizontalAlignment="Left" />
+                <controls:StatusBadge Text="{x:Bind Model.PhaseText, Mode=OneWay}"
+                                      Level="{x:Bind Model.BadgeLevel, Mode=OneWay}"
+                                      HorizontalAlignment="Right" />
+            </Grid>
+
+            <TextBlock Grid.Row="1"
+                       Text="{x:Bind Model.ItemName, Mode=OneWay}"
+                       Style="{StaticResource BodyTextBlockStyle}"
+                       TextTrimming="CharacterEllipsis" />
+
+            <TextBlock Grid.Row="2"
+                       Text="{x:Bind Model.CountdownText, Mode=OneWay}"
+                       Style="{StaticResource NumericTextStyle}"
+                       VerticalAlignment="Center" />
+
+            <Grid Grid.Row="3" ColumnSpacing="8" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Text="{x:Bind Model.ReadyAtText, Mode=OneWay}"
+                           Style="{StaticResource SecondaryTextStyle}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <!-- 仅"制造中"显示;取消=游戏内点「中止」,销毁性操作,点击前二次确认 -->
+                <Button Grid.Column="1"
+                        Content="取消制造"
+                        Command="{x:Bind Model.CancelCommand}"
+                        Visibility="{x:Bind Model.CancelVisibility, Mode=OneWay}"
+                        Padding="10,3,10,3">
+                    <Button.Resources>
+                        <ResourceDictionary>
+                            <SolidColorBrush x:Key="ButtonForeground"
+                                             Color="{ThemeResource SystemFillColorCritical}" />
+                            <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                             Color="{ThemeResource SystemFillColorCritical}" />
+                            <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                             Color="{ThemeResource SystemFillColorCritical}" />
+                        </ResourceDictionary>
+                    </Button.Resources>
+                </Button>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

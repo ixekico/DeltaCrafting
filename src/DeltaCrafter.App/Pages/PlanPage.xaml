@@ -1,0 +1,92 @@
+<Page
+    x:Class="DeltaCrafter.App.Pages.PlanPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DeltaCrafter.App.Controls"
+    xmlns:vm="using:DeltaCrafter.App.ViewModels">
+
+    <ScrollViewer>
+        <Grid Padding="{StaticResource TokenPagePadding}"
+              MaxWidth="{StaticResource TokenContentMaxWidth}">
+            <StackPanel Spacing="{StaticResource TokenGapL}">
+
+                <controls:PageHeader Title="制造计划"
+                                     Subtitle="为每个设施设定要制造的物品(名称需与游戏内列表完全一致)。所有修改即时自动保存。" />
+
+                <!-- 全局循环设置 -->
+                <Border Style="{StaticResource CardBorderStyle}">
+                    <StackPanel Spacing="16">
+                        <Grid>
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="自动循环" Style="{StaticResource CardTitleTextStyle}" />
+                                <TextBlock Text="开启后,到达计划时间自动上号收取并续造。"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                            </StackPanel>
+                            <ToggleSwitch HorizontalAlignment="Right"
+                                          IsOn="{x:Bind Vm.AutoLoopEnabled, Mode=TwoWay}" />
+                        </Grid>
+                        <Grid>
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="材料不足时自动一键补齐" Style="{StaticResource CardTitleTextStyle}" />
+                                <TextBlock Text="自动购买缺料后开工(消耗游戏币,金额随交易行波动)。关闭则缺料设施标记需人工。"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                            </StackPanel>
+                            <ToggleSwitch HorizontalAlignment="Right"
+                                          IsOn="{x:Bind Vm.AutoReplenishMaterials, Mode=TwoWay}" />
+                        </Grid>
+                        <Grid>
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="执行缓冲(秒)" Style="{StaticResource CardTitleTextStyle}" />
+                                <TextBlock Text="在游戏显示的完成时刻之后追加的等待,吸收识别与结算误差。"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                            </StackPanel>
+                            <NumberBox HorizontalAlignment="Right" Width="140"
+                                       SpinButtonPlacementMode="Inline"
+                                       Minimum="0" Maximum="3600" SmallChange="15"
+                                       Value="{x:Bind Vm.RunBufferSeconds, Mode=TwoWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 各设施配置 -->
+                <ItemsControl ItemsSource="{x:Bind Vm.Facilities}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="12" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PlanFacilityModel">
+                            <Border Style="{StaticResource CardBorderStyle}">
+                                <StackPanel Spacing="12">
+                                    <Grid>
+                                        <TextBlock Text="{x:Bind Name}"
+                                                   Style="{StaticResource CardTitleTextStyle}"
+                                                   VerticalAlignment="Center" />
+                                        <ToggleSwitch HorizontalAlignment="Right"
+                                                      OnContent="启用" OffContent="停用"
+                                                      IsOn="{x:Bind Enabled, Mode=TwoWay}" />
+                                    </Grid>
+                                    <!-- 搜索式选择:键入即过滤(大小写无关、×/x 等价),聚焦展开全部候选。
+                                         写入与回显走事件显式处理(即改即存),见 PlanPage.xaml.cs。 -->
+                                    <AutoSuggestBox Header="制造物品"
+                                                    PlaceholderText="输入关键字搜索,如 AP / 9×19;回车确认"
+                                                    QueryIcon="Find"
+                                                    HorizontalAlignment="Stretch"
+                                                    Loaded="OnItemBoxLoaded"
+                                                    GotFocus="OnItemBoxGotFocus"
+                                                    LostFocus="OnItemBoxLostFocus"
+                                                    TextChanged="OnItemTextChanged"
+                                                    QuerySubmitted="OnItemQuerySubmitted" />
+                                    <TextBox Header="备注(可选)"
+                                             Text="{x:Bind Note, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

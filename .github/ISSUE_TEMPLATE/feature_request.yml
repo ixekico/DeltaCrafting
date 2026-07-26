@@ -1,0 +1,25 @@
+name: 功能建议
+description: 提议一个明确、可验证的新能力
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 描述现在为什么难用，不要只写期望的实现方式。
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 期望结果
+      description: 说明用户能观察到的完成标准。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 游戏画面或流程依据
+      description: 若涉及 OCR 或点击，请描述真实界面；附件必须先脱敏。

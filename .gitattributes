@@ -1,0 +1,17 @@
+* text=auto
+
+*.cs text eol=lf
+*.csproj text eol=lf
+*.props text eol=lf
+*.sln text eol=crlf
+*.xaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.ps1 text eol=crlf
+*.yml text eol=lf
+*.iss text eol=crlf
+# 语言文件按固定字节校验，禁止 Git 改写换行。
+*.isl binary
+
+*.ico binary
+*.png binary

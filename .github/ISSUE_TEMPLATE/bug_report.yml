@@ -1,0 +1,51 @@
+name: Bug 报告
+description: 报告可复现的功能或识别问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先使用最新 Release 复现。上传日志或截图前，请删除昵称、聊天、Windows 用户名和绝对路径等个人信息。
+  - type: input
+    id: version
+    attributes:
+      label: DeltaCrafter 版本
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows 版本与显示缩放
+      placeholder: Windows 11 24H2，2560×1440，125%
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从启动前状态开始，列出最短复现路径。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为与证据
+      description: 可粘贴已脱敏的日志片段；不要上传完整用户数据目录。
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 隐私确认
+      options:
+        - label: 我已检查附件，不包含凭据、令牌、聊天内容或其他个人信息。
+          required: true

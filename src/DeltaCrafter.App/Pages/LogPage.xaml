@@ -1,0 +1,71 @@
+<Page
+    x:Class="DeltaCrafter.App.Pages.LogPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DeltaCrafter.App.Controls"
+    xmlns:vm="using:DeltaCrafter.App.ViewModels">
+
+    <Grid Padding="{StaticResource TokenPagePadding}"
+          MaxWidth="{StaticResource TokenContentMaxWidth}"
+          RowSpacing="{StaticResource TokenGapL}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <controls:PageHeader Grid.Row="0" Title="运行日志"
+                             Subtitle="实时运行记录;失败时的截图与识别文本会保存到诊断文件夹。" />
+
+        <!-- 工具条:等级筛选 + 打开文件夹 -->
+        <Grid Grid.Row="1">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="等级" VerticalAlignment="Center"
+                           Style="{StaticResource SecondaryTextStyle}" />
+                <ComboBox SelectedIndex="{x:Bind Vm.LevelFilterIndex, Mode=TwoWay}" MinWidth="120">
+                    <ComboBoxItem Content="全部" />
+                    <ComboBoxItem Content="信息及以上" />
+                    <ComboBoxItem Content="警告及以上" />
+                    <ComboBoxItem Content="仅错误" />
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Content="打开日志文件夹" Command="{x:Bind Vm.OpenLogsFolderCommand}" />
+                <Button Content="打开截图文件夹" Command="{x:Bind Vm.OpenShotsFolderCommand}" />
+                <Button Content="清空视图" Command="{x:Bind Vm.ClearViewCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 虚拟化日志列表 -->
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Padding="0">
+            <ListView ItemsSource="{x:Bind Vm.Rows}"
+                      SelectionMode="None"
+                      ScrollViewer.HorizontalScrollMode="Enabled"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding" Value="12,6" />
+                        <Setter Property="MinHeight" Value="0" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LogRow">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="72" />
+                                <ColumnDefinition Width="48" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{x:Bind TimeText}"
+                                       Style="{StaticResource SecondaryTextStyle}" />
+                            <TextBlock Grid.Column="1" Text="{x:Bind LevelText}"
+                                       Foreground="{x:Bind Level, Converter={StaticResource LogLevelBrush}}" />
+                            <TextBlock Grid.Column="2" Text="{x:Bind Message}"
+                                       TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Border>
+    </Grid>
+</Page>

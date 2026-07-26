@@ -1,0 +1,52 @@
+<Window
+    x:Class="DeltaCrafter.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DeltaCrafter.App.Controls">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 沉浸式标题栏:整行为拖拽区(SetTitleBar),含应用图标、标题与运行状态胶囊 -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="Transparent" Padding="16,0,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Image Source="ms-appx:///Assets/AppIcon.ico" Width="16" Height="16" />
+                <TextBlock Text="三角洲特勤助手"
+                           VerticalAlignment="Center"
+                           Style="{StaticResource CaptionTextBlockStyle}" />
+                <controls:StatusBadge Text="{x:Bind Shell.StatusText, Mode=OneWay}"
+                                      Level="{x:Bind Shell.StatusLevel, Mode=OneWay}" />
+            </StackPanel>
+        </Grid>
+
+        <NavigationView x:Name="Nav" Grid.Row="1"
+                        PaneDisplayMode="Left"
+                        OpenPaneLength="196"
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="True"
+                        SelectionChanged="OnNavSelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="总览" Tag="overview">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="制造计划" Tag="plan">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8FD;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="运行日志" Tag="logs">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE7C3;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <Frame x:Name="ContentFrame" />
+        </NavigationView>
+    </Grid>
+</Window>
