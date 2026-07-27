@@ -31,6 +31,7 @@ public sealed class AppHost : ICatalogSink, ICatalogLookup, IAppWindowGuard
     public ToastNotifier Notifier { get; }
     public AutomationCoordinator Coordinator { get; }
     public UpdateService Updater { get; }
+    public ProfitPlanService ProfitPlan { get; }
 
     public ShellViewModel ShellVm { get; }
     public OverviewViewModel OverviewVm { get; }
@@ -104,8 +105,11 @@ public sealed class AppHost : ICatalogSink, ICatalogLookup, IAppWindowGuard
         OverviewVm = new OverviewViewModel(Coordinator, UiSink, this);
         PlanVm = new PlanViewModel(this);
         LogVm = new LogViewModel(this);
+        // 服务在 VM 之后构造(应用推荐时要刷新 PlanVm),循环随调度循环一起启动。
+        ProfitPlan = new ProfitPlanService(this, new ProfitPlanCoordinator(), Log);
 
         _ = Task.Run(() => Coordinator.RunSchedulerLoopAsync(_appStop.Token));
+        _ = Task.Run(() => ProfitPlan.RunLoopAsync(_appStop.Token));
     }
 
     private void UpgradeDataFileIfNewer<T>(string fileName, string localPath, Func<T, int> revision)
@@ -170,6 +174,10 @@ public sealed class AppHost : ICatalogSink, ICatalogLookup, IAppWindowGuard
         });
     }
 
+    /// <summary>目录读写共用一把锁:合并写入在自动化线程,查询在 UI 线程与自动化线程
+    /// 都有(计划页解析、利润推荐应用、槽位名归一化),防止枚举中变更导致崩溃。</summary>
+    private readonly object _catalogGate = new();
+
     /// <summary>
     /// ICatalogSink:扫描结果合并入目录,存盘并刷新计划页下拉。
     /// 新条目 Name=Ocr=识别原文;用户可手工把 Name 改成正确写法(显示用),
@@ -177,35 +185,61 @@ public sealed class AppHost : ICatalogSink, ICatalogLookup, IAppWindowGuard
     /// </summary>
     public void MergeScanned(FacilityKey key, IReadOnlyList<string> names)
     {
-        string jsonKey = FacilityKeys.JsonKey(key);
-        if (!Catalog.Facilities.TryGetValue(jsonKey, out var list))
+        int added = 0, total;
+        lock (_catalogGate)
         {
-            list = [];
-            Catalog.Facilities[jsonKey] = list;
+            string jsonKey = FacilityKeys.JsonKey(key);
+            if (!Catalog.Facilities.TryGetValue(jsonKey, out var list))
+            {
+                list = [];
+                Catalog.Facilities[jsonKey] = list;
+            }
+            // 旧版本写入的条目没有 ocr 字段:一次性物化 Ocr=Name(与"空则用 Name 匹配"语义等价),
+            // 之后用户把 name 改成正确写法时,匹配键已固化在 ocr 里不受影响。
+            foreach (var legacy in list.Where(i => i.Ocr.Length == 0))
+                legacy.Ocr = legacy.Name;
+            var known = list
+                .SelectMany(i => new[] { TextMatch.Canonical(i.Name), TextMatch.Canonical(i.MatchKey) })
+                .ToHashSet(StringComparer.Ordinal);
+            foreach (var name in names)
+            {
+                if (!known.Add(TextMatch.Canonical(name))) continue;
+                list.Add(new CatalogItem { Name = name, Ocr = name });
+                added++;
+            }
+            Store.Save(Paths.ItemsPath, Catalog);
+            total = list.Count;
         }
-        // 旧版本写入的条目没有 ocr 字段:一次性物化 Ocr=Name(与"空则用 Name 匹配"语义等价),
-        // 之后用户把 name 改成正确写法时,匹配键已固化在 ocr 里不受影响。
-        foreach (var legacy in list.Where(i => i.Ocr.Length == 0))
-            legacy.Ocr = legacy.Name;
-        var known = list
-            .SelectMany(i => new[] { TextMatch.Canonical(i.Name), TextMatch.Canonical(i.MatchKey) })
-            .ToHashSet(StringComparer.Ordinal);
-        int added = 0;
-        foreach (var name in names)
-        {
-            if (!known.Add(TextMatch.Canonical(name))) continue;
-            list.Add(new CatalogItem { Name = name, Ocr = name });
-            added++;
-        }
-        Store.Save(Paths.ItemsPath, Catalog);
         Log.Information("{Facility} 目录合并:新增 {Added} 个,共 {Total} 个。",
-            FacilityKeys.DisplayName(key), added, list.Count);
+            FacilityKeys.DisplayName(key), added, total);
         _mainWindow?.DispatcherQueue.TryEnqueue(() => PlanVm.RebuildFromCatalog());
     }
 
-    /// <summary>ICatalogLookup:槽位 OCR 名 → 目录规范名(纯查询,解析规则见 CatalogNameResolver)。</summary>
-    public string? ResolveDisplayName(FacilityKey key, string ocrName) =>
-        CatalogNameResolver.Resolve(Catalog.For(key), ocrName);
+    /// <summary>ICatalogLookup:槽位 OCR 名 → 目录规范名(解析规则见 CatalogNameResolver)。</summary>
+    public string? ResolveDisplayName(FacilityKey key, string ocrName)
+    {
+        lock (_catalogGate)
+            return CatalogNameResolver.Resolve(Catalog.For(key), ocrName);
+    }
+
+    /// <summary>显示名 → 目录条目的运行匹配键。规范形先比显示名,再比匹配键
+    /// (用户可能改过显示名写法,匹配键仍是 OCR 原文);目录外名称返回 null,
+    /// 计划照常保存并按显示名做游戏内匹配。</summary>
+    public string? ResolveCatalogMatchKey(FacilityKey key, string displayName)
+    {
+        string canonical = TextMatch.Canonical(displayName);
+        lock (_catalogGate)
+            return Catalog.For(key).FirstOrDefault(i =>
+                TextMatch.Canonical(i.Name) == canonical
+                || TextMatch.Canonical(i.MatchKey) == canonical)?.MatchKey;
+    }
+
+    /// <summary>计划页下拉候选:目录显示名快照(锁内复制,调用方可自由枚举)。</summary>
+    public IReadOnlyList<string> CatalogNamesFor(FacilityKey key)
+    {
+        lock (_catalogGate)
+            return Catalog.For(key).Select(i => i.Name).ToList();
+    }
 
     public void AttachMainWindow(MainWindow window)
     {

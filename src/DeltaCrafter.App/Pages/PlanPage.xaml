@@ -19,6 +19,12 @@
                 <controls:PageHeader Title="制造计划"
                                      Subtitle="为每个设施设定要制造的物品(名称需与游戏内列表完全一致)。所有修改即时自动保存。" />
 
+                <!-- 利润优先模式横幅:亮明物品被自动接管及最近一次推荐结论(含失败原因)。 -->
+                <InfoBar IsOpen="{x:Bind Vm.IsProfitMode, Mode=OneWay}"
+                         Severity="Informational" IsClosable="False"
+                         Title="{x:Bind Vm.ProfitBannerTitle, Mode=OneWay}"
+                         Message="{x:Bind Vm.ProfitBannerMessage, Mode=OneWay}" />
+
                 <!-- 全局循环设置 -->
                 <Border Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="16">
@@ -87,6 +93,7 @@
                                                     PlaceholderText="输入关键字搜索,如 AP / 9×19;回车确认"
                                                     QueryIcon="Find"
                                                     HorizontalAlignment="Stretch"
+                                                    IsEnabled="{Binding ItemEditable}"
                                                     DataContextChanged="OnItemBoxDataContextChanged"
                                                     GotFocus="OnItemBoxGotFocus"
                                                     LostFocus="OnItemBoxLostFocus"

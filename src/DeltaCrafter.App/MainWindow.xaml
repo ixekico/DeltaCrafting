@@ -22,11 +22,13 @@
             </StackPanel>
         </Grid>
 
+        <!-- 内置 Settings 项文案跟随系统语言(英文系统显示「Settings」),
+             故禁用内置项,底部放自定义中文「设置」项保证文案恒为中文。 -->
         <NavigationView x:Name="Nav" Grid.Row="1"
                         PaneDisplayMode="Left"
                         OpenPaneLength="196"
                         IsBackButtonVisible="Collapsed"
-                        IsSettingsVisible="True"
+                        IsSettingsVisible="False"
                         SelectionChanged="OnNavSelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="总览" Tag="overview">
@@ -45,6 +47,13 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Content="设置" Tag="settings">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
 
             <Frame x:Name="ContentFrame" />
         </NavigationView>

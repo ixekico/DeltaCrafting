@@ -62,6 +62,29 @@ public sealed partial class SettingsViewModel : ObservableObject
         Save();
     }
 
+    /// <summary>制造模式(ComboBox 序号与 CraftMode 枚举一一对应:0 自定义、
+    /// 1 每小时利润优先、2 总利润优先)。切换后立即通知计划页锁定/解锁物品,
+    /// 并让利润服务马上抓取一次推荐,不等巡检周期。</summary>
+    public int CraftModeIndex
+    {
+        get => (int)S.CraftMode;
+        set
+        {
+            if (value < 0 || (int)S.CraftMode == value) return;
+            S.CraftMode = (CraftMode)value;
+            Save();
+            OnPropertyChanged();
+            _host.Log.Information("制造模式已切换为:{Mode}。", S.CraftMode switch
+            {
+                CraftMode.HourlyProfit => "每小时利润优先",
+                CraftMode.TotalProfit => "总利润优先",
+                _ => "自定义",
+            });
+            _host.PlanVm.NotifyCraftModeChanged();
+            _host.ProfitPlan.OnModeChanged();
+        }
+    }
+
     public double LaunchTimeoutSeconds
     {
         get => S.LaunchTimeoutSeconds;

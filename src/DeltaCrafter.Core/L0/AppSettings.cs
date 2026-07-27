@@ -15,6 +15,22 @@ public enum AfterRunAction
 public enum ThemeChoice { System, Light, Dark }
 
 /// <summary>
+/// 制造物品的选择方式。Custom = 用户在计划页自选;两种利润优先模式下,
+/// 四个设施的物品由 kkrb.net「特勤处制作产物推荐」自动填充(每 2 小时刷新),
+/// 计划页锁定物品编辑。数据源对同一设施给出同一推荐物品,两种模式的差别是
+/// 采信并记录的利润口径(每小时利润 / 单次制造总利润)。
+/// </summary>
+public enum CraftMode
+{
+    /// <summary>自定义:计划页手选物品(默认,与历史行为一致)。</summary>
+    Custom,
+    /// <summary>每小时利润优先:按推荐数据的小时利润口径自动填充。</summary>
+    HourlyProfit,
+    /// <summary>总利润优先:按推荐数据的单次制造总利润口径自动填充。</summary>
+    TotalProfit,
+}
+
+/// <summary>
 /// 游戏窗口匹配规则。ExactTitle 优先于 TitleContains;ClassName 为可选附加条件。
 /// 由设置页"定位游戏窗口"工具一次性写入,避免猜测窗口类名。
 /// </summary>
@@ -41,6 +57,9 @@ public sealed class AppSettings
     public int LobbyTimeoutSeconds { get; set; } = 240;
 
     public AfterRunAction AfterRun { get; set; } = AfterRunAction.CloseGame;
+
+    /// <summary>制造物品选择方式。非 Custom 时计划页物品锁定,由利润推荐自动填充。</summary>
+    public CraftMode CraftMode { get; set; } = CraftMode.Custom;
 
     /// <summary>定时循环总开关。关闭时仅手动"立即执行"生效。</summary>
     public bool AutoLoopEnabled { get; set; }

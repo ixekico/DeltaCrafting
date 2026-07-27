@@ -65,15 +65,15 @@ public sealed partial class MainWindow : Window
 
     private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs e)
     {
-        Type? page = e.IsSettingsSelected
-            ? typeof(SettingsPage)
-            : ((e.SelectedItem as NavigationViewItem)?.Tag as string) switch
-            {
-                "overview" => typeof(OverviewPage),
-                "plan" => typeof(PlanPage),
-                "logs" => typeof(LogPage),
-                _ => null,
-            };
+        // 设置页走自定义底部项(内置 Settings 项已禁用,其文案会跟随系统语言变英文)。
+        Type? page = ((e.SelectedItem as NavigationViewItem)?.Tag as string) switch
+        {
+            "overview" => typeof(OverviewPage),
+            "plan" => typeof(PlanPage),
+            "logs" => typeof(LogPage),
+            "settings" => typeof(SettingsPage),
+            _ => null,
+        };
         if (page is not null && ContentFrame.CurrentSourcePageType != page)
             ContentFrame.Navigate(page);
     }
