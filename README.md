@@ -9,7 +9,7 @@ DeltaCrafter 是一款面向 Windows 的本地桌面工具，用于按照计划�
 
 ## 当前状态
 
-当前版本为 `0.2.0`，核心链路已在 2560×1440、16:9 无边框窗口下完成实机验证。
+当前版本为 `0.3.0`，核心链路已在 2560×1440、16:9 无边框窗口下完成实机验证。
 
 - 启动器到游戏大厅、特勤处导航
 - 四设施多遍共识识别
@@ -17,6 +17,7 @@ DeltaCrafter 是一款面向 Windows 的本地桌面工具，用于按照计划�
 - 材料不足时的一键补齐
 - 游戏内倒计时驱动的自动调度
 - 制造取消、失败退避、托盘与防睡眠
+- 制造模式：自定义手选，或按 kkrb.net 利润推荐自动填充（每 2 小时更新）
 - 深色、浅色与跟随系统主题
 - 启动自动检查更新，确认后自动下载校验并覆盖安装
 
@@ -53,7 +54,7 @@ DeltaCrafter 是一款面向 Windows 的本地桌面工具，用于按照计划�
 2. 校验压缩包 SHA-256，确认下载未损坏或被替换：
 
    ```powershell
-   Get-FileHash .\DeltaCrafter-win-x64-0.2.0.zip -Algorithm SHA256
+   Get-FileHash .\DeltaCrafter-win-x64-0.3.0.zip -Algorithm SHA256
    ```
 
 3. 解压到普通可写目录，不要直接在压缩包内运行。
@@ -108,9 +109,9 @@ dotnet test tests\DeltaCrafter.Core.Tests\DeltaCrafter.Core.Tests.csproj -c Rele
 生成与 GitHub Releases 相同结构的发布包：
 
 ```powershell
-.\scripts\build-release.ps1 -Version 0.2.0
+.\scripts\build-release.ps1 -Version 0.3.0
 .\scripts\install-inno-setup.ps1
-.\scripts\build-installer.ps1 -Version 0.2.0 -SkipBuild
+.\scripts\build-installer.ps1 -Version 0.3.0 -SkipBuild
 ```
 
 安装包构建固定使用官方签名的 Inno Setup 6.7.3，并校验编译器、简体中文语言文件及复用
