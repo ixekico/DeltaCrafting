@@ -14,6 +14,6 @@ public sealed class ProfitPlanCoordinator
 
     private readonly ProfitAdvisorBrick _brick = new();
 
-    public Task<IReadOnlyList<ProfitRecommendation>> FetchRecommendationsAsync(CancellationToken ct) =>
+    public Task<ProfitRecommendationSet> FetchRecommendationsAsync(CancellationToken ct) =>
         _brick.FetchRecommendationsAsync(ct);
 }

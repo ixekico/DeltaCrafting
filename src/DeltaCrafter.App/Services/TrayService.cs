@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 
@@ -39,5 +40,11 @@ public sealed class TrayService : IDisposable
         _icon.ForceCreate();
     }
 
-    public void Dispose() => _icon.Dispose();
+    public void Dispose()
+    {
+        // SecondWindow 会先关闭承载右键菜单的隐藏窗口再删除托盘图标；退出正处于该窗口
+        // 的点击回调中，因此先同步隐藏图标，避免窗口收尾期间通知区仍显示残影。
+        _icon.Visibility = Visibility.Collapsed;
+        _icon.Dispose();
+    }
 }

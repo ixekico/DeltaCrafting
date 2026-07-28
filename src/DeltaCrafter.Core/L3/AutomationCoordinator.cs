@@ -99,6 +99,23 @@ public sealed partial class AutomationCoordinator : IDisposable
 
     public void UnblockRuns() => _runsBlocked = false;
 
+    /// <summary>
+    /// 在两轮制造之间执行短事务。利润推荐用它等待当前轮结束并阻止新轮插入,
+    /// 保证四个设施的推荐作为一个完整批次写入。
+    /// </summary>
+    public async Task RunBetweenRoundsAsync(Func<Task> action, CancellationToken ct)
+    {
+        await _runLock.WaitAsync(ct);
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _runLock.Release();
+        }
+    }
+
     /// <summary>常驻调度循环。仅此处依据设置开合防睡眠;执行中强制防睡眠。</summary>
     public async Task RunSchedulerLoopAsync(CancellationToken appStop)
     {
@@ -221,8 +238,8 @@ public sealed partial class AutomationCoordinator : IDisposable
         Publish(new CoordinatorStatus(EngineMode.Running, "进入特勤处…", null));
         await _nav.EnterSpecOpsAsync(launch.Hwnd, ct);
 
-        var plan = _plan();
-        var settings = _settings();
+        var plan = _plan().CreateExecutionSnapshot();
+        bool autoReplenishMaterials = _settings().AutoReplenishMaterials;
         var blocked = new HashSet<FacilityKey>();
 
         Publish(new CoordinatorStatus(EngineMode.Running, "观察设施状态…", null));
@@ -239,10 +256,10 @@ public sealed partial class AutomationCoordinator : IDisposable
                 case FacilityPhase.ReadyToCollect:
                     await _collect.CollectAsync(launch.Hwnd, fp.Key, ct);
                     report.Add($"{name}已领取「{DisplayItem(fp.Key, obs.ItemName)}」");
-                    await StartCraftForAsync(launch.Hwnd, fp, settings, report, blocked, ct);
+                    await StartCraftForAsync(launch.Hwnd, fp, autoReplenishMaterials, report, blocked, ct);
                     break;
                 case FacilityPhase.Idle:
-                    await StartCraftForAsync(launch.Hwnd, fp, settings, report, blocked, ct);
+                    await StartCraftForAsync(launch.Hwnd, fp, autoReplenishMaterials, report, blocked, ct);
                     break;
                 case FacilityPhase.Crafting:
                     report.Add($"{name}制造中「{DisplayItem(fp.Key, obs.ItemName)}」(剩余 {Fmt(obs.Remaining!.Value)})");
@@ -265,7 +282,7 @@ public sealed partial class AutomationCoordinator : IDisposable
         await ApplyAfterRunAsync(launch.Hwnd, ct);
     }
 
-    private async Task StartCraftForAsync(nint hwnd, FacilityPlan fp, AppSettings settings,
+    private async Task StartCraftForAsync(nint hwnd, FacilityPlan fp, bool autoReplenishMaterials,
         RunReport report, HashSet<FacilityKey> blocked, CancellationToken ct)
     {
         string name = FacilityKeys.DisplayName(fp.Key);
@@ -278,7 +295,7 @@ public sealed partial class AutomationCoordinator : IDisposable
         }
         // SearchName = 目录里的 OCR 原文(若从下拉选中),显示与匹配分离,抗识别误差。
         var result = await _craft.StartAsync(hwnd, fp.Key, fp.SearchName, fp.ItemName,
-            settings.AutoReplenishMaterials, ct);
+            autoReplenishMaterials, ct);
         if (result.Started)
         {
             report.Add($"{name}已开始「{fp.ItemName}」(剩余 {Fmt(result.Remaining!.Value)})");

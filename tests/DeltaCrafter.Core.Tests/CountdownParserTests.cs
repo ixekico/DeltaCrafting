@@ -20,6 +20,7 @@ public class CountdownParserTests
     [InlineData("08：15：00", 8, 15, 0)]
     [InlineData("04：03℃8", 4, 3, 8)]
     [InlineData("11：31，48", 11, 31, 48)]
+    [InlineData("剩 余 时 间 ： 07 、 59 52", 7, 59, 52)]
     public void Folds_observed_ocr_separators(string text, int h, int m, int s)
     {
         Assert.True(CountdownParser.TryParse(text, out var t));
@@ -43,6 +44,16 @@ public class CountdownParserTests
     {
         Assert.True(CountdownParser.TryParse(text, out var t));
         Assert.Equal(new TimeSpan(h, m, s), t);
+    }
+
+    [Theory]
+    [InlineData("07 、 59 52")]                 // 没有明确的剩余时间标签
+    [InlineData("剩余时间 07 75 52")]           // 分钟越界
+    [InlineData("剩余时间 07 59")]              // 数字组不足
+    [InlineData("剩余时间 07 59 52 01")]        // 多出第四个数字组
+    public void Rejects_ambiguous_space_separated_digits(string text)
+    {
+        Assert.False(CountdownParser.TryParse(text, out _));
     }
 
     [Theory]

@@ -22,8 +22,10 @@ public sealed class ProfitPlanService
     private readonly DispatcherQueue _dispatcher;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
-    private DateTimeOffset _lastSuccessAt = DateTimeOffset.MinValue;
-    private DateTimeOffset _lastAttemptAt = DateTimeOffset.MinValue;
+    // 后台巡检与 UI 模式切换都会访问刷新时刻。存 UTC ticks 并用 Interlocked
+    // 读写,避免跨线程读取 DateTimeOffset 结构时得到撕裂值。
+    private long _lastSuccessUtcTicks = DateTimeOffset.MinValue.UtcTicks;
+    private long _lastAttemptUtcTicks = DateTimeOffset.MinValue.UtcTicks;
 
     /// <summary>计划页横幅的最近一次刷新结论(UI 线程读写)。</summary>
     public string LastStatus { get; private set; } = "";
@@ -70,17 +72,21 @@ public sealed class ProfitPlanService
             SetStatus("");
             return;
         }
-        _lastSuccessAt = DateTimeOffset.MinValue;
-        _lastAttemptAt = DateTimeOffset.MinValue;
+        Interlocked.Exchange(ref _lastSuccessUtcTicks, DateTimeOffset.MinValue.UtcTicks);
+        Interlocked.Exchange(ref _lastAttemptUtcTicks, DateTimeOffset.MinValue.UtcTicks);
         SetStatus("正在获取利润推荐…");
         _ = Task.Run(() => TryRefreshAsync(CancellationToken.None));
     }
 
     private bool IsRefreshDue()
     {
-        var now = DateTimeOffset.Now;
-        return now - _lastSuccessAt >= ProfitPlanCoordinator.RefreshInterval
-            && now - _lastAttemptAt >= FailureRetryDelay;
+        var now = DateTimeOffset.UtcNow;
+        var lastSuccess = new DateTimeOffset(
+            Interlocked.Read(ref _lastSuccessUtcTicks), TimeSpan.Zero);
+        var lastAttempt = new DateTimeOffset(
+            Interlocked.Read(ref _lastAttemptUtcTicks), TimeSpan.Zero);
+        return now - lastSuccess >= ProfitPlanCoordinator.RefreshInterval
+            && now - lastAttempt >= FailureRetryDelay;
     }
 
     /// <summary>抓取并应用。并发保护:抓取进行中时后来者直接放弃(巡检下分钟再看)。</summary>
@@ -89,10 +95,14 @@ public sealed class ProfitPlanService
         if (!await _refreshGate.WaitAsync(0, ct)) return;
         try
         {
-            _lastAttemptAt = DateTimeOffset.Now;
+            Interlocked.Exchange(ref _lastAttemptUtcTicks, DateTimeOffset.UtcNow.UtcTicks);
             var recommendations = await _coordinator.FetchRecommendationsAsync(ct);
-            _lastSuccessAt = DateTimeOffset.Now;
-            _dispatcher.TryEnqueue(() => ApplyRecommendations(recommendations));
+            var completedAt = DateTimeOffset.Now;
+            // 等当前制造轮结束后再在 UI 线程一次性应用四个设施;持有执行闸门期间
+            // 新一轮无法插入,计划更新与执行快照之间不存在半批次窗口。
+            await _host.Coordinator.RunBetweenRoundsAsync(
+                () => RunOnUiAsync(() => ApplyRecommendations(recommendations, completedAt)), ct);
+            Interlocked.Exchange(ref _lastSuccessUtcTicks, completedAt.UtcTicks);
         }
         // 砖内超时已翻译为 TimeoutException;此过滤只放行「调用方令牌真被取消」的
         // 取消异常(应用退出),其余取消异常一律按普通失败告警,防循环被静默杀死。
@@ -112,11 +122,14 @@ public sealed class ProfitPlanService
     /// <summary>把推荐写入计划(UI 线程)。抓取期间用户可能已切回自定义——
     /// 应用前再验一次模式,绝不覆盖用户手选的物品。只定点刷新物品变化的卡片,
     /// 其余卡片保留输入状态(正在编辑的备注不被后台刷新打断)。</summary>
-    private void ApplyRecommendations(IReadOnlyList<ProfitRecommendation> recommendations)
+    private void ApplyRecommendations(
+        ProfitRecommendationSet recommendationSet, DateTimeOffset completedAt)
     {
         var mode = _host.Settings.CraftMode;
         if (mode == CraftMode.Custom) return;
 
+        var recommendations = recommendationSet.ForMode(mode);
+        string metric = mode == CraftMode.HourlyProfit ? "每小时利润" : "总利润";
         bool planDirty = false;
         var replacedItems = new List<FacilityKey>();
         foreach (var rec in recommendations)
@@ -134,10 +147,10 @@ public sealed class ProfitPlanService
                 }
                 continue;
             }
-            _log.Information("{Facility} 计划物品:{Old} → {New}(小时利润 {Hourly:N0} / 总利润 {Total:N0})。",
+            _log.Information("{Facility} 计划物品:{Old} → {New}({Metric} {Profit:N0})。",
                 FacilityKeys.DisplayName(rec.Facility),
                 plan.ItemName.Length > 0 ? plan.ItemName : "未选物品",
-                rec.ItemName, rec.HourlyProfit, rec.TotalProfit);
+                rec.ItemName, metric, rec.Profit);
             plan.ItemName = rec.ItemName;
             plan.MatchName = resolved;
             planDirty = true;
@@ -145,9 +158,27 @@ public sealed class ProfitPlanService
         }
         if (planDirty) _host.SavePlan();
         if (replacedItems.Count > 0) _host.PlanVm.RefreshFacilities(replacedItems);
-        string metric = mode == CraftMode.HourlyProfit ? "每小时利润" : "总利润";
-        SetStatus($"推荐已更新({_lastSuccessAt:HH:mm},{metric}口径):" + string.Join(";",
+        SetStatus($"推荐已更新({completedAt:HH:mm},{metric}口径):" + string.Join(";",
             recommendations.Select(r => $"{FacilityKeys.DisplayName(r.Facility)}={r.ItemName}")));
+    }
+
+    private Task RunOnUiAsync(Action action)
+    {
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!_dispatcher.TryEnqueue(() =>
+            {
+                try
+                {
+                    action();
+                    completion.SetResult();
+                }
+                catch (Exception ex)
+                {
+                    completion.SetException(ex);
+                }
+            }))
+            throw new InvalidOperationException("应用界面派发队列不可用,利润推荐未写入计划。");
+        return completion.Task;
     }
 
     /// <summary>更新横幅结论并通知计划页(调用方保证在 UI 线程)。</summary>

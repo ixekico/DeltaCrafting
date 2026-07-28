@@ -23,7 +23,7 @@ public sealed class ProfitAdvisorBrick
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
         "Chrome/126.0.0.0 Safari/537.36";
 
-    /// <summary>spData 键(网站命名)→ 本项目设施键。四个键必须全部出现。</summary>
+    /// <summary>推荐分组内的网站设施键 → 本项目设施键。四个键必须全部出现。</summary>
     private static readonly (string Key, FacilityKey Facility)[] FacilityMap =
     [
         ("tech", FacilityKey.TechCenter),
@@ -49,7 +49,7 @@ public sealed class ProfitAdvisorBrick
     /// (下发 csrf_token)→ checkUAStatus(标记会话已验证)→ getOVData(取数据)。
     /// 每次抓取用全新会话,避免服务端会话过期造成难排查的间歇失败。
     /// </summary>
-    public async Task<IReadOnlyList<ProfitRecommendation>> FetchRecommendationsAsync(CancellationToken ct)
+    public async Task<ProfitRecommendationSet> FetchRecommendationsAsync(CancellationToken ct)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(_timeout);
@@ -66,7 +66,7 @@ public sealed class ProfitAdvisorBrick
         }
     }
 
-    private async Task<IReadOnlyList<ProfitRecommendation>> FetchCoreAsync(CancellationToken ct)
+    private async Task<ProfitRecommendationSet> FetchCoreAsync(CancellationToken ct)
     {
         var cookies = new CookieContainer();
         using var handler = _handlerFactory?.Invoke()
@@ -144,45 +144,49 @@ public sealed class ProfitAdvisorBrick
     }
 
     /// <summary>
-    /// 解析 getOVData 返回:data.spData 下每设施一个对象,itemName 为推荐物品,
-    /// itemForge[].hourlyProfit 为各设施等级的小时利润(取最高,与网站展示一致),
-    /// profit 为单次制造总利润。四个设施缺一即抛——不返回残缺推荐去改用户计划。
-    /// 利润只验「字段存在且为数值」,0 或负值是真实行情,照常采信。
+    /// 解析 getOVData 的两套设施摘要:spData 是单次总利润最高,
+    /// sphData 是每小时利润最高。两套对象的 profit 字段分别承载对应口径,
+    /// 且推荐物品可以不同。任一分组缺设施或字段即拒绝整批数据。
     /// </summary>
-    internal static IReadOnlyList<ProfitRecommendation> ParseOverviewData(JsonElement root)
+    internal static ProfitRecommendationSet ParseOverviewData(JsonElement root)
     {
         if (!root.TryGetProperty("data", out var data)
-            || !data.TryGetProperty("spData", out var sp)
-            || sp.ValueKind != JsonValueKind.Object)
-            throw new InvalidOperationException("推荐数据缺少 spData 字段,站点数据结构可能已变化。");
+            || data.ValueKind != JsonValueKind.Object)
+            throw new InvalidOperationException("推荐数据缺少 data 字段,站点数据结构可能已变化。");
+
+        var total = ParseRecommendationGroup(data, "spData", "总利润");
+        var hourly = ParseRecommendationGroup(data, "sphData", "每小时利润");
+        return new ProfitRecommendationSet(total, hourly);
+    }
+
+    private static IReadOnlyList<ProfitRecommendation> ParseRecommendationGroup(
+        JsonElement data, string groupName, string metricName)
+    {
+        if (!data.TryGetProperty(groupName, out var group)
+            || group.ValueKind != JsonValueKind.Object)
+            throw new InvalidOperationException(
+                $"推荐数据缺少 {groupName}({metricName})字段,站点数据结构可能已变化。");
 
         var result = new List<ProfitRecommendation>(FacilityMap.Length);
         foreach (var (key, facility) in FacilityMap)
         {
-            if (!sp.TryGetProperty(key, out var entry))
+            if (!group.TryGetProperty(key, out var entry))
                 throw new InvalidOperationException(
-                    $"推荐数据缺少设施「{FacilityKeys.DisplayName(facility)}」({key}),拒绝按残缺数据改计划。");
+                    $"{metricName}推荐缺少设施「{FacilityKeys.DisplayName(facility)}」({key}),拒绝按残缺数据改计划。");
             string itemName = entry.TryGetProperty("itemName", out var n)
                 ? n.GetString()?.Trim() ?? "" : "";
             if (itemName.Length == 0)
                 throw new InvalidOperationException(
-                    $"推荐数据中「{FacilityKeys.DisplayName(facility)}」缺少物品名,站点数据结构可能已变化。");
+                    $"{metricName}推荐中「{FacilityKeys.DisplayName(facility)}」缺少物品名,站点数据结构可能已变化。");
 
-            double? hourly = null;
-            if (entry.TryGetProperty("itemForge", out var forge)
-                && forge.ValueKind == JsonValueKind.Array)
-                foreach (var level in forge.EnumerateArray())
-                    if (level.TryGetProperty("hourlyProfit", out var hp)
-                        && hp.ValueKind == JsonValueKind.Number)
-                        hourly = hourly is null ? hp.GetDouble() : Math.Max(hourly.Value, hp.GetDouble());
-            double? total = entry.TryGetProperty("profit", out var p)
+            double? profit = entry.TryGetProperty("profit", out var p)
                 && p.ValueKind == JsonValueKind.Number ? p.GetDouble() : null;
-            if (hourly is null || total is null)
+            if (profit is null)
                 throw new InvalidOperationException(
-                    $"推荐数据中「{FacilityKeys.DisplayName(facility)}」缺少数值利润字段,站点数据结构可能已变化。");
+                    $"{metricName}推荐中「{FacilityKeys.DisplayName(facility)}」缺少数值 profit 字段,站点数据结构可能已变化。");
 
-            result.Add(new ProfitRecommendation(facility, itemName, hourly.Value, total.Value));
+            result.Add(new ProfitRecommendation(facility, itemName, profit.Value));
         }
-        return result;
+        return result.AsReadOnly();
     }
 }

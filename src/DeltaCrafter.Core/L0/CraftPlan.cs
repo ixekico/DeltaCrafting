@@ -64,4 +64,20 @@ public sealed class CraftPlanConfig
     {
         Facilities = FacilityKeys.All.Select(k => new FacilityPlan { Key = k }).ToList(),
     };
+
+    /// <summary>
+    /// 建立与全局计划完全隔离的执行快照。一轮开始后只消费该副本,
+    /// 后台推荐或用户编辑不会让同一轮混用新旧物品与 OCR 匹配名。
+    /// </summary>
+    public CraftPlanConfig CreateExecutionSnapshot() => new()
+    {
+        Facilities = Facilities.Select(f => new FacilityPlan
+        {
+            Key = f.Key,
+            Enabled = f.Enabled,
+            ItemName = f.ItemName,
+            MatchName = f.MatchName,
+            Note = f.Note,
+        }).ToList(),
+    };
 }

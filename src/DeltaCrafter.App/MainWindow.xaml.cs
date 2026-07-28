@@ -49,7 +49,8 @@ public sealed partial class MainWindow : Window
     public void RequestExit()
     {
         _exitRequested = true;
-        Close();
+        AppHost.Current.Shutdown();
+        Application.Current.Exit();
     }
 
     private void OnClosing(AppWindow sender, AppWindowClosingEventArgs e)

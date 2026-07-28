@@ -6,14 +6,24 @@ namespace DeltaCrafter.Core.L1;
 /// <summary>
 /// 游戏剩余时间文本解析。支持两类格式:
 /// 1) 冒号计时 "HH:MM:SS"(含全角冒号;分/秒域校验 0-59,避免把杂散数字拼成时间);
-/// 2) 中文计时 "X天X小时X分钟X秒"(至少出现一个单位)。
+/// 2) 带「剩余时间」标签的三数字组(OCR 允许把冒号读成顿号或空格);
+/// 3) 中文计时 "X天X小时X分钟X秒"(至少出现一个单位)。
 /// 解析前折算常见 OCR 形近误读(O→0、l/I/|→1、S→5、B→8、Z→2)。
 /// 解析失败返回 false,由调用方判为步骤失败——绝不猜一个默认时长。
 /// </summary>
 public static partial class CountdownParser
 {
     private static readonly Regex ColonPattern =
-        new(@"(\d{1,3})\s*[::]\s*([0-5]?\d)\s*[::]\s*([0-5]?\d)", RegexOptions.Compiled);
+        new(@"(\d{1,3})\s*:\s*([0-5]?\d)\s*:\s*([0-5]?\d)", RegexOptions.Compiled);
+
+    // 2560×1440 实测「07:59:52」会被读成「剩 余 时 间 ： 07 、 59 52」。
+    // 只有标签完整、恰好三个合法数字组且组间仅含已观察到的分隔符时才采信;
+    // 不能把任意三个界面数字宽泛拼成倒计时。
+    private static readonly Regex LabelledSeparatedDigitsPattern = new(
+        @"剩[ \t]*余[ \t]*时[ \t]*间[ \t]*[:、]?[ \t]*" +
+        @"(\d{1,3})[ \t:、,.;·]+([0-5]?\d)[ \t:、,.;·]+([0-5]?\d)" +
+        @"(?![ \t:、,.;·]*\d)",
+        RegexOptions.Compiled);
 
     private static readonly Regex CjkPattern = new(
         @"(?:(\d{1,3})\s*天)?\s*(?:(\d{1,3})\s*(?:小时|时))?\s*(?:(\d{1,3})\s*分(?:钟)?)?\s*(?:(\d{1,3})\s*秒)?",
@@ -26,6 +36,16 @@ public static partial class CountdownParser
         string folded = FoldDigitLookalikes(ocrText);
 
         var m = ColonPattern.Match(folded);
+        if (m.Success)
+        {
+            remaining = new TimeSpan(
+                int.Parse(m.Groups[1].Value),
+                int.Parse(m.Groups[2].Value),
+                int.Parse(m.Groups[3].Value));
+            return true;
+        }
+
+        m = LabelledSeparatedDigitsPattern.Match(folded);
         if (m.Success)
         {
             remaining = new TimeSpan(
