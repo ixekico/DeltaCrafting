@@ -5,7 +5,7 @@ namespace DeltaCrafter.Core.L0;
 /// 不存在跳过某个失败步骤继续跑的路径——那会把点错按钮的后果放大)。
 /// ScreenshotPath/OcrDump 供人工定位:失败时的画面与识别原文。
 /// </summary>
-public sealed class StepFailedException : Exception
+public class StepFailedException : Exception
 {
     public string StepName { get; }
     public string? ScreenshotPath { get; }

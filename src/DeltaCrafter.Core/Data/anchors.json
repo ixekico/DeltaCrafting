@@ -6,8 +6,8 @@
   // safehouse →Tab→ lobby →点顶栏特勤处→ specops-home;
   // 点设施槽位 → production(空闲)或 collect-result(完成)。
   "calibrated": true,
-  "revision": 8,
-  "calibratedOn": "2560×1440 实机截图标定 2026-07-26(rev8:新增活动公告页 promo-announce 判定)",
+  "revision": 9,
+  "calibratedOn": "2560×1440 实机标定；1920×1080 样本验证 2026-07-30(rev9:新增仓库空间不足 Toast 判定)",
 
   "keywords": {
     "idle": ["空闲中", "空闲"],
@@ -20,9 +20,10 @@
   },
 
   "screens": {
-    // 模式选择:左侧大卡「烽火地带」。
+    // 模式选择:两种左侧大卡样式都稳定显示下方分类标题「战役模式」。
+    // 1080p 下卡片大字「烽火地带」会被系统 OCR 合并误读为「亠地带」,不作为判定词。
     "mode-select": {
-      "probe": { "roi": { "x": 0.05, "y": 0.48, "w": 0.20, "h": 0.14 }, "mustContain": "烽火地带" },
+      "probe": { "roi": { "x": 0.04, "y": 0.655, "w": 0.23, "h": 0.055 }, "mustContain": "战役模式" },
       "points": { "mode-entry": { "x": 0.27, "y": 0.382 } },
       "rois": {}
     },
@@ -42,9 +43,10 @@
       "points": {},
       "rois": {}
     },
-    // 干员大厅:右下「行前备战」为大厅独有(区分于特勤处页);specops-entry=顶栏「特勤处」。
+    // 干员大厅:右下「行前备战」为大厅独有(区分于特勤处页);1.5x 可避免 1080p
+    // 末字「战」在默认 2x 最近邻下误读为「找」。specops-entry=顶栏「特勤处」。
     "lobby": {
-      "probe": { "roi": { "x": 0.79, "y": 0.865, "w": 0.18, "h": 0.062 }, "mustContain": "行前备战" },
+      "probe": { "roi": { "x": 0.79, "y": 0.865, "w": 0.18, "h": 0.062 }, "mustContain": "行前备战", "upscale": 1.5 },
       "points": { "specops-entry": { "x": 0.4375, "y": 0.0507 } },
       "rois": {}
     },
@@ -98,6 +100,13 @@
     "abort-confirm": {
       "probe": { "roi": { "x": 0.36, "y": 0.40, "w": 0.28, "h": 0.075 }, "mustContain": "不退回" },
       "points": { "confirm": { "x": 0.582, "y": 0.622 } },
+      "rois": {}
+    },
+    // 补齐材料或领取产物时仓库已满:顶部中央短暂出现同一 Toast。
+    // 它是叠加状态而非独立页面；流程会与正常成功状态并行探测，一旦命中立即中止本轮。
+    "warehouse-full": {
+      "probe": { "roi": { "x": 0.42, "y": 0.135, "w": 0.18, "h": 0.065 }, "mustContain": "仓库空间不足" },
+      "points": {},
       "rois": {}
     }
   }

@@ -66,8 +66,9 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-; The app manifest requires elevation; launching here reuses Setup's token.
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchAfterInstall}"; Flags: nowait postinstall skipifsilent
+; postinstall defaults to the original non-elevated user token. The app manifest requires
+; elevation, so force Setup's current elevated token; otherwise Windows returns error 740.
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchAfterInstall}"; Flags: nowait postinstall skipifsilent runascurrentuser
 ; In-app updater installs with /SILENT /AutoLaunch=1 and expects an automatic restart.
 ; Gated on the explicit flag so ordinary silent installs (e.g. CI smoke tests) are unchanged.
 Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: ShouldAutoLaunch

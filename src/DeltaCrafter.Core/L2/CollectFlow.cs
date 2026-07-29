@@ -179,7 +179,8 @@ public sealed class CollectFlow
         _probe.ClickPoint(hwnd, AnchorKeys.SpecOpsHome, AnchorKeys.FacilitySlot(key));
 
         // 分支一:直达「获得奖励」;分支二:进入生产页,需再点「领取」按钮。
-        string? screen = await WaitForAsync(hwnd, [AnchorKeys.CollectResult, AnchorKeys.Production], 12_000, ct);
+        string? screen = await WaitForAsync(hwnd,
+            [AnchorKeys.CollectResult, AnchorKeys.Production], 12_000, $"领取{name}产物", ct);
         if (screen is null)
         {
             var (png, dumpText) = await _probe.DumpAsync(hwnd, "fail-领取入口");
@@ -188,12 +189,15 @@ public sealed class CollectFlow
         }
         if (screen == AnchorKeys.Production)
         {
-            // 进了生产页说明领取按钮在右下三态按钮位;点它并以结算界面出现为准。
-            await _runner.RunAsync(hwnd, new Step(
-                $"点击{name}领取按钮",
-                () => _probe.ClickPoint(hwnd, AnchorKeys.Production, AnchorKeys.PointActionButton),
-                () => _probe.IsOnAsync(hwnd, AnchorKeys.CollectResult),
-                TimeSpan.FromSeconds(12)), ct);
+            // 领取会改变游戏状态，只点击一次；失败时并行捕获短暂的仓库已满 Toast。
+            _probe.ClickPoint(hwnd, AnchorKeys.Production, AnchorKeys.PointActionButton);
+            if (await WaitForAsync(hwnd, [AnchorKeys.CollectResult], 12_000,
+                    $"领取{name}产物", ct) is null)
+            {
+                var (png, dumpText) = await _probe.DumpAsync(hwnd, "fail-领取结算");
+                throw new StepFailedException($"领取{name}产物",
+                    $"点击领取后未出现结算界面。诊断截图:{png}", png, dumpText);
+            }
         }
 
         await _runner.RunAsync(hwnd, new Step(
@@ -215,15 +219,18 @@ public sealed class CollectFlow
         _log.Information("{Facility} 已领取。", name);
     }
 
-    private async Task<string?> WaitForAsync(nint hwnd, string[] screens, int timeoutMs, CancellationToken ct)
+    private async Task<string?> WaitForAsync(nint hwnd, string[] screens, int timeoutMs,
+        string operation, CancellationToken ct)
     {
         long deadline = Environment.TickCount64 + timeoutMs;
         while (Environment.TickCount64 < deadline)
         {
             ct.ThrowIfCancellationRequested();
+            if (await _probe.IsOnAsync(hwnd, AnchorKeys.WarehouseFull))
+                throw new WarehouseFullException(operation);
             var hit = await _probe.WhichScreenAsync(hwnd, screens);
             if (hit is not null) return hit;
-            await Task.Delay(800, ct);
+            await Task.Delay(400, ct);
         }
         return null;
     }

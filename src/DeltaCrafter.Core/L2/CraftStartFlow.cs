@@ -65,14 +65,10 @@ public sealed class CraftStartFlow
                 () => _probe.IsOnAsync(hwnd, AnchorKeys.ReplenishPopup),
                 TimeSpan.FromSeconds(10)), ct);
             _log.Information("{Facility}「{Item}」缺料,自动购买(金额随交易行波动,见游戏账单)。", facility, displayName);
-            await _runner.RunAsync(hwnd, new Step(
-                "确认购买缺料",
-                () => _probe.ClickPoint(hwnd, AnchorKeys.ReplenishPopup, AnchorKeys.PointBuy),
-                () => _probe.IsOnAsync(hwnd, AnchorKeys.Production),
-                TimeSpan.FromSeconds(15)), ct);
-            await Task.Delay(800, ct);
-
-            label = await ReadActionLabelAsync(hwnd, prodSpec, ct);
+            // 购买是有副作用的动作，只允许点击一次；并行等待成功按钮或仓库已满 Toast，
+            // 避免通用步骤重试器在失败时重复购买。
+            _probe.ClickPoint(hwnd, AnchorKeys.ReplenishPopup, AnchorKeys.PointBuy);
+            label = await WaitForReplenishOutcomeAsync(hwnd, facility, displayName, prodSpec, ct);
             if (!LabelHits(label, kw.ButtonProduce))
             {
                 // 兑换类材料交易行买不到:显式受阻,绝不循环烧钱重试。
@@ -183,6 +179,38 @@ public sealed class CraftStartFlow
             await Task.Delay(1200, ct);
         }
         return "";
+    }
+
+    /// <summary>
+    /// 补齐后的两个明确结果:按钮变为「生产」即成功；仍为「一键补齐」即材料未补齐。
+    /// 顶部 Toast 存在时间很短，因此每轮先读仓库容量状态，再读常驻按钮状态。
+    /// </summary>
+    private async Task<string> WaitForReplenishOutcomeAsync(nint hwnd, string facility,
+        string displayName, ScreenSpec prodSpec, CancellationToken ct)
+    {
+        long started = Environment.TickCount64;
+        long deadline = started + 15_000;
+        while (Environment.TickCount64 < deadline)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (await _probe.IsOnAsync(hwnd, AnchorKeys.WarehouseFull))
+                throw new WarehouseFullException($"{facility}补齐「{displayName}」材料");
+
+            if (await _probe.IsOnAsync(hwnd, AnchorKeys.Production))
+            {
+                string label = await ReadLabelOnceAsync(hwnd, prodSpec);
+                if (LabelHits(label, _probe.Anchors.Keywords.ButtonProduce)) return label;
+                // 等足 Toast 的主要显示窗口后，仍为补齐态才判定普通缺料。
+                if (Environment.TickCount64 - started >= 3_000 &&
+                    LabelHits(label, _probe.Anchors.Keywords.ButtonReplenish))
+                    return label;
+            }
+            await Task.Delay(400, ct);
+        }
+
+        var (png, dumpText) = await _probe.DumpAsync(hwnd, "fail-确认购买缺料");
+        throw new StepFailedException("确认购买缺料",
+            $"15s 内未识别到购买结果。诊断截图:{png}", png, dumpText);
     }
 
     private async Task<string> ReadLabelOnceAsync(nint hwnd, ScreenSpec prodSpec) =>

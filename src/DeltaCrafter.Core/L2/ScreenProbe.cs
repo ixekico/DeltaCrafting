@@ -58,7 +58,8 @@ public sealed class ScreenProbe
         foreach (var name in screenNames)
         {
             var spec = Screen(name);
-            string text = (await _ocr.ReadAsync(frame, spec.Probe.Roi)).FullText;
+            string text = (await _ocr.ReadAsync(
+                frame, spec.Probe.Roi, spec.Probe.Upscale)).FullText;
             if (Normalize(text).Contains(Normalize(spec.Probe.MustContain), StringComparison.Ordinal))
                 return name;
         }
@@ -69,7 +70,8 @@ public sealed class ScreenProbe
     public async Task<bool> IsOnAsync(nint hwnd, string screenName)
     {
         var spec = Screen(screenName);
-        string text = await ReadRoiAsync(hwnd, spec.Probe.Roi);
+        string text = (await _ocr.ReadAsync(
+            Capture(hwnd), spec.Probe.Roi, spec.Probe.Upscale)).FullText;
         bool on = Normalize(text).Contains(Normalize(spec.Probe.MustContain), StringComparison.Ordinal);
         _log.Debug("界面判定 {Screen}:{Result}(读到:{Text})", screenName, on, Compact(text));
         return on;

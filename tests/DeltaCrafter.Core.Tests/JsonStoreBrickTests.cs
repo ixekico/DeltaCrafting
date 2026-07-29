@@ -63,8 +63,11 @@ public class JsonStoreBrickTests : IDisposable
         Assert.False(string.IsNullOrWhiteSpace(promo.MustContain));
         Assert.True(promo.Roi.W > 0 && promo.Roi.H > 0);
         Assert.NotNull(table.Screen(AnchorKeys.Lobby).Point(AnchorKeys.PointSpecOpsEntry));
+        Assert.Equal(1.5, table.Screen(AnchorKeys.Lobby).Probe.Upscale);
         Assert.NotNull(table.Screen(AnchorKeys.CollectResult).Point(AnchorKeys.PointDismiss));
         Assert.NotNull(table.Screen(AnchorKeys.ReplenishPopup).Point(AnchorKeys.PointBuy));
+        Assert.Equal("仓库空间不足",
+            table.Screen(AnchorKeys.WarehouseFull).Probe.MustContain);
 
         var specOps = table.Screen(AnchorKeys.SpecOpsHome);
         foreach (var key in FacilityKeys.All)

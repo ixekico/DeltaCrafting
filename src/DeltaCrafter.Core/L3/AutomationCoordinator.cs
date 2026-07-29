@@ -361,6 +361,17 @@ public sealed partial class AutomationCoordinator : IDisposable
                 _engine.MarkRunFinished(report.Summary(), failed: false, _settings().FailureRetryMinutes);
             Publish(new CoordinatorStatus(EngineMode.Idle, "已手动停止", null));
         }
+        catch (WarehouseFullException ex)
+        {
+            report.AddFailure(ex.Message);
+            _log.Error(ex, "[{Trigger}]因仓库空间不足中止。", trigger);
+            if (affectsSchedule)
+                _engine.MarkRunFinished(report.Summary(), failed: true, _settings().FailureRetryMinutes);
+            _notifier.Notify("仓库空间不足",
+                "补齐材料或领取制造物品失败，请及时清理游戏仓库后再运行。");
+            Publish(new CoordinatorStatus(EngineMode.Faulted, ex.Message,
+                _engine.ComputeNextRunAt(_plan(), _settings())));
+        }
         catch (Exception ex)
         {
             report.AddFailure(ex.Message);

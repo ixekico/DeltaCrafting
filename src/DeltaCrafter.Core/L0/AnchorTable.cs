@@ -21,6 +21,8 @@ public sealed class TextProbe
 {
     public NRect Roi { get; set; } = new();
     public string MustContain { get; set; } = "";
+    /// <summary>该探针的 OCR 缩放倍率；不同字号/字重的最稳定倍率可能不同。</summary>
+    public double Upscale { get; set; } = 2.0;
 }
 
 /// <summary>一个游戏界面的锚点集合:判定探针 + 可点击点位 + 可读取区域。</summary>
@@ -84,6 +86,7 @@ public static class AnchorKeys
     public const string ReplenishPopup = "replenish-popup";
     public const string CollectResult = "collect-result";
     public const string AbortConfirm = "abort-confirm";
+    public const string WarehouseFull = "warehouse-full";
 
     public const string PointModeEntry = "mode-entry";
     public const string PointSpecOpsEntry = "specops-entry";
