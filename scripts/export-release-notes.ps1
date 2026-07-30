@@ -1,4 +1,4 @@
-# Exports one version section from CHANGELOG.md as the GitHub Release body.
+# Exports one version's user-facing "Release notes" subsection as the GitHub Release body.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
@@ -31,11 +31,18 @@ if (-not $match.Success) {
     throw "CHANGELOG.md does not contain a [$Version] release section."
 }
 
-$body = $match.Groups['body'].Value.Trim()
+$versionBody = $match.Groups['body'].Value
+$notesPattern = '(?ms)^### Release notes\s*\r?\n(?<notes>.*?)(?=^### |\z)'
+$notesMatch = [regex]::Match($versionBody, $notesPattern)
+if (-not $notesMatch.Success) {
+    throw "CHANGELOG.md [$Version] does not contain a '### Release notes' subsection."
+}
+
+$body = $notesMatch.Groups['notes'].Value.Trim()
 if ([string]::IsNullOrWhiteSpace($body) -or
-    $body -notmatch '(?m)^### ' -or
+    $body -notmatch '(?m)^#### ' -or
     $body -notmatch '(?m)^- ') {
-    throw "CHANGELOG.md [$Version] release section has no publishable content."
+    throw "CHANGELOG.md [$Version] 'Release notes' has no user-facing headings and items."
 }
 
 $targetDir = Split-Path -Parent $targetPath
