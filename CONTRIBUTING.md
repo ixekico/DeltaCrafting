@@ -44,6 +44,8 @@ dotnet test tests\DeltaCrafter.Core.Tests\DeltaCrafter.Core.Tests.csproj -c Rele
 
 - 面向用户的行为变化同步更新 `README.md`。
 - 尚未发布和已经发布的变化按版本记录在 `CHANGELOG.md`。
+- 发布标签对应的 GitHub Release 正文由 `scripts/export-release-notes.ps1` 从
+  `CHANGELOG.md` 同版本章节提取；缺少该章节或内容为空时发布工作流会明确失败。
 
 ## Pull Request
 

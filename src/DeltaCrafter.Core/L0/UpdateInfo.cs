@@ -9,6 +9,7 @@ public sealed record UpdateInfo(
     Version Latest,
     string TagName,
     bool IsNewer,
+    string ReleaseNotes,
     string? SetupName,
     string? SetupUrl,
     string? ChecksumUrl,

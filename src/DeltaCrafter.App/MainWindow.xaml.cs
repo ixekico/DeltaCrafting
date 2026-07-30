@@ -16,6 +16,8 @@ namespace DeltaCrafter.App;
 public sealed partial class MainWindow : Window
 {
     public ShellViewModel Shell { get; }
+    public string WindowTitle { get; } =
+        $"三角洲特勤助手v{typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
     private bool _exitRequested;
 
     public MainWindow()
@@ -23,7 +25,7 @@ public sealed partial class MainWindow : Window
         Shell = AppHost.Current.ShellVm;
         InitializeComponent();
 
-        Title = "三角洲特勤助手";
+        Title = WindowTitle;
         // Mica 云母:Win11 生效;更旧系统框架自动回退纯色背景(仅视觉降级,已记日志)。
         SystemBackdrop = new MicaBackdrop { Kind = Microsoft.UI.Composition.SystemBackdrops.MicaKind.Base };
         ExtendsContentIntoTitleBar = true;

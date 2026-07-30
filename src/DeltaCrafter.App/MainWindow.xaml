@@ -14,7 +14,7 @@
         <Grid x:Name="AppTitleBar" Grid.Row="0" Background="Transparent" Padding="16,0,0,0">
             <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                 <Image Source="ms-appx:///Assets/AppIcon.ico" Width="16" Height="16" />
-                <TextBlock Text="三角洲特勤助手"
+                <TextBlock Text="{x:Bind WindowTitle, Mode=OneTime}"
                            VerticalAlignment="Center"
                            Style="{StaticResource CaptionTextBlockStyle}" />
                 <controls:StatusBadge Text="{x:Bind Shell.StatusText, Mode=OneWay}"

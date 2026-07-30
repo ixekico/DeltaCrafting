@@ -48,6 +48,8 @@ public sealed class UpdateBrick
             ?? throw new InvalidOperationException($"无法解析发布标签「{tag}」,请到项目主页手动更新。");
 
         bool newer = latest > Normalize(current);
+        string releaseNotes = ReleaseNotesFormatter.ToPlainText(
+            release.TryGetProperty("body", out var body) ? body.GetString() ?? "" : "");
         string versionToken = tag.Trim();
         if (versionToken.StartsWith('v') || versionToken.StartsWith('V'))
             versionToken = versionToken[1..];
@@ -75,7 +77,7 @@ public sealed class UpdateBrick
             EnsureHttpsDownloadUrl(setupUrl!);
             EnsureHttpsDownloadUrl(checksumUrl!);
         }
-        return new UpdateInfo(Normalize(current), latest, tag, newer,
+        return new UpdateInfo(Normalize(current), latest, tag, newer, releaseNotes,
             setupName, setupUrl, checksumUrl, setupBytes);
     }
 

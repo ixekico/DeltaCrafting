@@ -63,6 +63,7 @@ public class UpdateBrickTests
         using var json = JsonDocument.Parse("""
         {
           "tag_name": "v0.2.0",
+          "body": "### 新增\n\n- 自动更新显示更新日志。",
           "assets": [
             {
               "name": "DeltaCrafter-Setup-0.1.0.exe",
@@ -91,6 +92,8 @@ public class UpdateBrickTests
         var info = UpdateBrick.ParseRelease(json.RootElement, new Version(0, 1, 0, 0));
 
         Assert.True(info.IsNewer);
+        Assert.Equal($"新增{Environment.NewLine}{Environment.NewLine}• 自动更新显示更新日志。",
+            info.ReleaseNotes);
         Assert.Equal("DeltaCrafter-Setup-0.2.0.exe", info.SetupName);
         Assert.EndsWith("/new.exe", info.SetupUrl);
         Assert.EndsWith("/new.sha256", info.ChecksumUrl);

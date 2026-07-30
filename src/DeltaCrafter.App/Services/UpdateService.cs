@@ -89,12 +89,19 @@ public sealed class UpdateService
 
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Opacity = 0.8 };
         var progress = new ProgressBar { Minimum = 0, Maximum = 100, Visibility = Visibility.Collapsed };
+        var releaseNotes = new TextBlock
+        {
+            Text = info.ReleaseNotes,
+            TextWrapping = TextWrapping.Wrap,
+            IsTextSelectionEnabled = true,
+        };
         var dialog = new ContentDialog
         {
             Title = $"发现新版本 {info.TagName}",
             Content = new StackPanel
             {
                 Spacing = 12,
+                MaxWidth = 560,
                 Children =
                 {
                     new TextBlock
@@ -103,6 +110,13 @@ public sealed class UpdateService
                         Text = $"当前版本 v{info.Current.ToString(3)},最新版本 v{info.Latest.ToString(3)}。\n" +
                                "将下载官方安装包并校验 SHA-256,校验通过后静默安装并自动重启助手。\n" +
                                "制造计划、正在计时的制造任务与设置都保存在本机数据目录,更新不受影响。",
+                    },
+                    new TextBlock { Text = "更新内容", FontSize = 16 },
+                    new ScrollViewer
+                    {
+                        MaxHeight = 240,
+                        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                        Content = releaseNotes,
                     },
                     progress, status,
                 },
