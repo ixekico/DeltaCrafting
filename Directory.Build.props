@@ -9,7 +9,7 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
-    <Version>0.3.1</Version>
+    <Version>0.4.0</Version>
     <Product>DeltaCrafter 三角洲特勤助手</Product>
     <Description>《三角洲行动》特勤处本地自动制造与调度助手。</Description>
     <Copyright>Copyright © 2026 DeltaCrafter contributors</Copyright>

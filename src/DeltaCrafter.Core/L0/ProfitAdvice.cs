@@ -12,7 +12,7 @@ public sealed record ProfitRecommendation(
 
 /// <summary>
 /// 同一次 getOVData 响应里的两套完整推荐。两套数据必须各自包含四个设施,
-/// 调用方按当前制造模式选择,不能从总利润物品反推每小时利润推荐。
+/// 调用方按每个设施当前的制造模式选择,不能从总利润物品反推每小时利润推荐。
 /// </summary>
 public sealed record ProfitRecommendationSet(
     IReadOnlyList<ProfitRecommendation> TotalProfitRecommendations,
@@ -24,4 +24,7 @@ public sealed record ProfitRecommendationSet(
         CraftMode.HourlyProfit => HourlyProfitRecommendations,
         _ => throw new InvalidOperationException("自定义制造模式没有自动利润推荐。"),
     };
+
+    public ProfitRecommendation ForFacility(FacilityKey facility, CraftMode mode) =>
+        ForMode(mode).Single(r => r.Facility == facility);
 }

@@ -72,6 +72,12 @@ public sealed class AppHost : ICatalogSink, ICatalogLookup, IAppWindowGuard
         UpgradeDataFileIfNewer<ItemCatalog>("items.json", Paths.ItemsPath, t => t.Revision);
         Settings = Store.LoadOrCreate(Paths.SettingsPath, () => new AppSettings());
         Plan = Store.LoadOrCreate(Paths.PlanPath, CraftPlanConfig.CreateDefault);
+        var planMigration = CraftPlanMigration.Upgrade(Plan, Settings);
+        if (planMigration.PlanChanged) Store.Save(Paths.PlanPath, Plan);
+        if (planMigration.SettingsChanged) Store.Save(Paths.SettingsPath, Settings);
+        if (planMigration.PlanChanged || planMigration.SettingsChanged)
+            Log.Information("制造计划配置已升级到 schema {Schema};旧版全局制造模式已迁移并移除。",
+                Plan.SchemaVersion);
         Catalog = Store.Load<ItemCatalog>(Paths.ItemsPath);
 
         var clock = new SystemClock();
@@ -260,8 +266,18 @@ public sealed class AppHost : ICatalogSink, ICatalogLookup, IAppWindowGuard
         // 计划页无保存键(即改即存),在日志里亮出保存内容,让"存没存"可直接被看见。
         Log.Information("制造计划已保存:{Summary}", string.Join("; ",
             Plan.Facilities.Select(f =>
-                $"{FacilityKeys.DisplayName(f.Key)}[{(f.Enabled ? "启用" : "停用")}]{(f.ItemName.Length > 0 ? " " + f.ItemName : " 未选物品")}")));
+                $"{FacilityKeys.DisplayName(f.Key)}[{DescribeCraftMode(f.Mode)}/"
+                + $"{(f.Enabled ? "启用" : "停用")}]"
+                + $"{(f.ItemName.Length > 0 ? " " + f.ItemName : " 未选物品")}")));
     }
+
+    private static string DescribeCraftMode(CraftMode mode) => mode switch
+    {
+        CraftMode.Custom => "自定义物品",
+        CraftMode.HourlyProfit => "每小时利润最高",
+        CraftMode.TotalProfit => "总利润最高",
+        _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "未知制造模式。"),
+    };
 
     public void Shutdown()
     {

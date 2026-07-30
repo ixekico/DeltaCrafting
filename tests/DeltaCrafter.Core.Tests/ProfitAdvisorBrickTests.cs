@@ -75,6 +75,10 @@ public class ProfitAdvisorBrickTests
         Assert.Equal("幻影垂直握把",
             Assert.Single(set.ForMode(CraftMode.HourlyProfit),
                 r => r.Facility == FacilityKey.TechCenter).ItemName);
+        Assert.Equal("灵眼3/7测距狙击瞄准镜",
+            set.ForFacility(FacilityKey.TechCenter, CraftMode.TotalProfit).ItemName);
+        Assert.Equal("幻影垂直握把",
+            set.ForFacility(FacilityKey.TechCenter, CraftMode.HourlyProfit).ItemName);
         Assert.Throws<InvalidOperationException>(() => set.ForMode(CraftMode.Custom));
     }
 

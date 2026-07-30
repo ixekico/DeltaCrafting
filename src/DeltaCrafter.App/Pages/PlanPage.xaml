@@ -17,9 +17,9 @@
                         Spacing="{StaticResource TokenGapL}">
 
                 <controls:PageHeader Title="制造计划"
-                                     Subtitle="为每个设施设定要制造的物品(名称需与游戏内列表完全一致)。所有修改即时自动保存。" />
+                                     Subtitle="分别设置每个设施的制造模式与物品。所有修改即时自动保存。" />
 
-                <!-- 利润优先模式横幅:亮明物品被自动接管及最近一次推荐结论(含失败原因)。 -->
+                <!-- 利润模式横幅:亮明哪些卡片会被自动接管及最近一次推荐结论(含失败原因)。 -->
                 <InfoBar IsOpen="{x:Bind Vm.IsProfitMode, Mode=OneWay}"
                          Severity="Informational" IsClosable="False"
                          Title="{x:Bind Vm.ProfitBannerTitle, Mode=OneWay}"
@@ -77,11 +77,27 @@
                         <DataTemplate>
                             <Border Style="{StaticResource CardBorderStyle}">
                                 <StackPanel Spacing="12">
-                                    <Grid>
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding Name}"
                                                    Style="{StaticResource CardTitleTextStyle}"
                                                    VerticalAlignment="Center" />
-                                        <ToggleSwitch HorizontalAlignment="Right"
+                                        <!-- 模式紧邻启用开关且位于其左侧,保持每张设施卡的控制归属清楚。 -->
+                                        <ComboBox Grid.Column="1"
+                                                  MinWidth="150"
+                                                  HorizontalAlignment="Right"
+                                                  SelectedIndex="{Binding ModeIndex, Mode=TwoWay}"
+                                                  AutomationProperties.Name="制造模式">
+                                            <ComboBoxItem Content="自定义物品" />
+                                            <ComboBoxItem Content="每小时利润最高" />
+                                            <ComboBoxItem Content="总利润最高" />
+                                        </ComboBox>
+                                        <ToggleSwitch Grid.Column="2"
+                                                      HorizontalAlignment="Right"
                                                       OnContent="启用" OffContent="停用"
                                                       IsOn="{Binding Enabled, Mode=TwoWay}" />
                                     </Grid>
@@ -99,8 +115,6 @@
                                                     LostFocus="OnItemBoxLostFocus"
                                                     TextChanged="OnItemTextChanged"
                                                     QuerySubmitted="OnItemQuerySubmitted" />
-                                    <TextBox Header="备注(可选)"
-                                             Text="{Binding Note, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
                                 </StackPanel>
                             </Border>
                         </DataTemplate>

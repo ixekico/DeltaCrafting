@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace DeltaCrafter.Core.L0;
 
 /// <summary>一轮收取+续造完成后,对游戏客户端的处置方式。</summary>
@@ -13,22 +15,6 @@ public enum AfterRunAction
 
 /// <summary>UI 主题选择。System = 跟随系统。</summary>
 public enum ThemeChoice { System, Light, Dark }
-
-/// <summary>
-/// 制造物品的选择方式。Custom = 用户在计划页自选;两种利润优先模式下,
-/// 四个设施的物品由 kkrb.net「特勤处制作产物推荐」自动填充(每 2 小时刷新),
-/// 计划页锁定物品编辑。每个设施分别提供每小时利润最高与单次总利润最高物品,
-/// 两种模式按对应口径选择,推荐结果允许不同。
-/// </summary>
-public enum CraftMode
-{
-    /// <summary>自定义:计划页手选物品(默认,与历史行为一致)。</summary>
-    Custom,
-    /// <summary>每小时利润优先:按推荐数据的小时利润口径自动填充。</summary>
-    HourlyProfit,
-    /// <summary>总利润优先:按推荐数据的单次制造总利润口径自动填充。</summary>
-    TotalProfit,
-}
 
 /// <summary>
 /// 游戏窗口匹配规则。ExactTitle 优先于 TitleContains;ClassName 为可选附加条件。
@@ -58,8 +44,13 @@ public sealed class AppSettings
 
     public AfterRunAction AfterRun { get; set; } = AfterRunAction.CloseGame;
 
-    /// <summary>制造物品选择方式。非 Custom 时计划页物品锁定,由利润推荐自动填充。</summary>
-    public CraftMode CraftMode { get; set; } = CraftMode.Custom;
+    /// <summary>
+    /// 仅用于把 v0.3.x 的 settings.json 全局模式迁移到 v0.4.0 的各设施计划。
+    /// 迁移完成即清空且不再写回;运行逻辑不得读取此属性。
+    /// </summary>
+    [JsonPropertyName("craftMode")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public CraftMode? LegacyGlobalCraftMode { get; set; }
 
     /// <summary>定时循环总开关。关闭时仅手动"立即执行"生效。</summary>
     public bool AutoLoopEnabled { get; set; }

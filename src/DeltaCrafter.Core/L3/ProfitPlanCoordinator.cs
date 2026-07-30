@@ -9,11 +9,26 @@ namespace DeltaCrafter.Core.L3;
 /// </summary>
 public sealed class ProfitPlanCoordinator
 {
-    /// <summary>利润模式下的推荐刷新周期(需求约定:每 2 小时更新一次)。</summary>
-    public static readonly TimeSpan RefreshInterval = TimeSpan.FromHours(2);
+    public static readonly TimeSpan FailureRetryDelay = TimeSpan.FromMinutes(10);
 
     private readonly ProfitAdvisorBrick _brick = new();
 
     public Task<ProfitRecommendationSet> FetchRecommendationsAsync(CancellationToken ct) =>
         _brick.FetchRecommendationsAsync(ct);
+
+    /// <summary>
+    /// 成功后固定等到下一个本地整点;失败时 10 分钟重试,但不会跨过更早到来的整点。
+    /// 启动预热由调用方立即执行,不经过此计算。
+    /// </summary>
+    public static DateTimeOffset NextRefreshAttemptAt(
+        DateTimeOffset now,
+        bool lastFetchSucceeded)
+    {
+        var nextWholeHour = new DateTimeOffset(
+            now.Year, now.Month, now.Day, now.Hour, 0, 0, now.Offset).AddHours(1);
+        if (lastFetchSucceeded) return nextWholeHour;
+
+        var retryAt = now.Add(FailureRetryDelay);
+        return retryAt < nextWholeHour ? retryAt : nextWholeHour;
+    }
 }

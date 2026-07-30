@@ -32,10 +32,13 @@ public class JsonStoreBrickTests : IDisposable
         Assert.Equal(4, created.Facilities.Count);
         Assert.True(File.Exists(path));
 
-        created.For(FacilityKey.Workbench).ItemName = "自定义";
+        created.For(FacilityKey.Workbench).SetCustomSelection("自定义", "自定义 OCR");
         _store.Save(path, created);
         var reloaded = _store.LoadOrCreate(path, CraftPlanConfig.CreateDefault);
-        Assert.Equal("自定义", reloaded.For(FacilityKey.Workbench).ItemName); // 已存在文件绝不被默认值覆盖
+        var workbench = reloaded.For(FacilityKey.Workbench);
+        Assert.Equal("自定义", workbench.ItemName); // 已存在文件绝不被默认值覆盖
+        Assert.Equal("自定义", workbench.CustomItemName);
+        Assert.Equal("自定义 OCR", workbench.CustomMatchName);
     }
 
     [Fact]

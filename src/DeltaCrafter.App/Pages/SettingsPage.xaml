@@ -37,17 +37,6 @@
                     </controls:SettingCard.Slot>
                 </controls:SettingCard>
 
-                <controls:SettingCard Glyph="&#xE8EC;" Header="制造模式"
-                                      Description="自定义:在计划页自行选择物品;利润优先:按 kkrb.net 推荐自动填充四个设施(每 2 小时更新),计划页不可再手选物品。">
-                    <controls:SettingCard.Slot>
-                        <ComboBox SelectedIndex="{x:Bind Vm.CraftModeIndex, Mode=TwoWay}" MinWidth="180">
-                            <ComboBoxItem Content="自定义" />
-                            <ComboBoxItem Content="每小时利润优先" />
-                            <ComboBoxItem Content="总利润优先" />
-                        </ComboBox>
-                    </controls:SettingCard.Slot>
-                </controls:SettingCard>
-
                 <controls:SettingCard Glyph="&#xE916;" Header="启动超时(秒)"
                                       Description="启动后等待游戏窗口出现的上限。">
                     <controls:SettingCard.Slot>
